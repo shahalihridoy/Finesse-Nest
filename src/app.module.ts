@@ -18,6 +18,7 @@ import { ProductsModule } from "./modules/products/products.module";
 import { ShopModule } from "./modules/shop/shop.module";
 import { UploadModule } from "./modules/upload/upload.module";
 import { UsersModule } from "./modules/users/users.module";
+import { WishlistModule } from "./modules/wishlist/wishlist.module";
 
 @Module({
   imports: [
@@ -55,7 +56,8 @@ import { UsersModule } from "./modules/users/users.module";
     MenuModule,
     PreorderModule,
     NotificationsModule,
-    UploadModule
+    UploadModule,
+    WishlistModule
   ],
   controllers: [AppController]
 })

@@ -1,11 +1,22 @@
 import { Injectable } from "@nestjs/common";
-import { eq } from "drizzle-orm";
+import { and, desc, eq, like, or, sql } from "drizzle-orm";
+import { HelperService } from "../../common/services/helper.service";
 import { DatabaseService } from "../../database/database.service";
-import { groups, brands, menus } from "../../database/schema";
+import {
+  brands,
+  groups,
+  mainProducts,
+  menus,
+  products,
+  stores
+} from "../../database/schema";
 
 @Injectable()
 export class ShopService {
-  constructor(private readonly db: DatabaseService) {}
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly helperService: HelperService
+  ) {}
 
   /**
    * Get all colors - maintains exact same logic as original allColors
@@ -128,6 +139,367 @@ export class ShopService {
     return {
       success: true,
       brands: brandsList
+    };
+  }
+
+  /**
+   * Get shop products with filters - maintains exact same logic as original getShopProducts
+   */
+  async getShopProducts(
+    page: number = 1,
+    limit: number = 12,
+    categoryId?: number,
+    brandId?: number,
+    groupId?: number,
+    search?: string,
+    sortBy?: string,
+    minPrice?: number,
+    maxPrice?: number
+  ) {
+    const db = this.db.getDb();
+    const offset = (page - 1) * limit;
+
+    // Build where conditions
+    const whereConditions = [
+      eq(mainProducts.isAvailable, true),
+      eq(mainProducts.isArchived, false)
+    ];
+
+    if (categoryId) {
+      whereConditions.push(eq(mainProducts.categoryId, categoryId));
+    }
+
+    if (brandId) {
+      whereConditions.push(eq(mainProducts.brandId, brandId));
+    }
+
+    if (groupId) {
+      whereConditions.push(eq(mainProducts.groupId, groupId));
+    }
+
+    if (search) {
+      whereConditions.push(
+        or(
+          like(sql`name`, `%${search}%`),
+          like(sql`description`, `%${search}%`)
+        )
+      );
+    }
+
+    if (minPrice !== undefined) {
+      whereConditions.push(
+        sql`CAST(${mainProducts.sellingPrice} AS DECIMAL) >= ${minPrice}`
+      );
+    }
+
+    if (maxPrice !== undefined) {
+      whereConditions.push(
+        sql`CAST(${mainProducts.sellingPrice} AS DECIMAL) <= ${maxPrice}`
+      );
+    }
+
+    // Build order by clause
+    let orderByClause = [desc(mainProducts.createdAt)];
+    if (sortBy) {
+      switch (sortBy) {
+        case "price_low":
+          orderByClause = [
+            sql`CAST(${mainProducts.sellingPrice} AS DECIMAL) ASC`
+          ];
+          break;
+        case "price_high":
+          orderByClause = [
+            sql`CAST(${mainProducts.sellingPrice} AS DECIMAL) DESC`
+          ];
+          break;
+        case "name":
+          orderByClause = [sql`name ASC`];
+          break;
+        case "newest":
+          orderByClause = [desc(mainProducts.createdAt)];
+          break;
+      }
+    }
+
+    // Get products
+    const shopProducts = await db.query.mainProducts.findMany({
+      where: and(...whereConditions),
+      with: {
+        group: true,
+        category: true,
+        brand: true,
+        productImages: true,
+        products: {
+          where: and(
+            eq(products.isAvailable, true),
+            eq(products.isArchived, false)
+          ),
+          with: {
+            purchases: {
+              where: eq(stores.mainBranch, true),
+              with: {
+                store: true
+              }
+            },
+            sellings: {
+              where: eq(stores.mainBranch, true),
+              with: {
+                store: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: orderByClause,
+      limit: limit,
+      offset: offset
+    });
+
+    // Format products with stock calculation
+    const formattedProducts = [];
+    for (const product of shopProducts) {
+      const formattedProduct =
+        await this.helperService.formatMainProductStock(product);
+      formattedProducts.push(formattedProduct);
+    }
+
+    // Get total count for pagination
+    const totalCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(mainProducts)
+      .where(and(...whereConditions));
+
+    return {
+      success: true,
+      products: {
+        data: formattedProducts,
+        pagination: {
+          page: page,
+          limit: limit,
+          total: totalCount[0]?.count || 0,
+          totalPages: Math.ceil((totalCount[0]?.count || 0) / limit)
+        }
+      }
+    };
+  }
+
+  /**
+   * Get featured products - maintains exact same logic as original getFeaturedProducts
+   */
+  async getFeaturedProducts(limit: number = 8) {
+    const db = this.db.getDb();
+
+    const featuredProducts = await db.query.mainProducts.findMany({
+      where: and(
+        eq(mainProducts.isAvailable, true),
+        eq(mainProducts.isArchived, false),
+        eq(mainProducts.isFeatured, true)
+      ),
+      with: {
+        group: true,
+        category: true,
+        brand: true,
+        productImages: true,
+        products: {
+          where: and(
+            eq(products.isAvailable, true),
+            eq(products.isArchived, false)
+          ),
+          with: {
+            purchases: {
+              where: eq(stores.mainBranch, true),
+              with: {
+                store: true
+              }
+            },
+            sellings: {
+              where: eq(stores.mainBranch, true),
+              with: {
+                store: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: [desc(mainProducts.createdAt)],
+      limit: limit
+    });
+
+    // Format products with stock calculation
+    const formattedProducts = [];
+    for (const product of featuredProducts) {
+      const formattedProduct =
+        await this.helperService.formatMainProductStock(product);
+      formattedProducts.push(formattedProduct);
+    }
+
+    return {
+      success: true,
+      featuredProducts: formattedProducts
+    };
+  }
+
+  /**
+   * Get latest products - maintains exact same logic as original getLatestProducts
+   */
+  async getLatestProducts(limit: number = 8) {
+    const db = this.db.getDb();
+
+    const latestProducts = await db.query.mainProducts.findMany({
+      where: and(
+        eq(mainProducts.isAvailable, true),
+        eq(mainProducts.isArchived, false)
+      ),
+      with: {
+        group: true,
+        category: true,
+        brand: true,
+        productImages: true,
+        products: {
+          where: and(
+            eq(products.isAvailable, true),
+            eq(products.isArchived, false)
+          ),
+          with: {
+            purchases: {
+              where: eq(stores.mainBranch, true),
+              with: {
+                store: true
+              }
+            },
+            sellings: {
+              where: eq(stores.mainBranch, true),
+              with: {
+                store: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: [desc(mainProducts.createdAt)],
+      limit: limit
+    });
+
+    // Format products with stock calculation
+    const formattedProducts = [];
+    for (const product of latestProducts) {
+      const formattedProduct =
+        await this.helperService.formatMainProductStock(product);
+      formattedProducts.push(formattedProduct);
+    }
+
+    return {
+      success: true,
+      latestProducts: formattedProducts
+    };
+  }
+
+  /**
+   * Search products - maintains exact same logic as original searchProducts
+   */
+  async searchProducts(
+    query: string,
+    page: number = 1,
+    limit: number = 12,
+    sortBy?: string
+  ) {
+    const db = this.db.getDb();
+    const offset = (page - 1) * limit;
+
+    // Build where conditions for search
+    const whereConditions = [
+      eq(mainProducts.isAvailable, true),
+      eq(mainProducts.isArchived, false),
+      or(
+        like(sql`name`, `%${query}%`),
+        like(sql`description`, `%${query}%`),
+        like(sql`sku`, `%${query}%`)
+      )
+    ];
+
+    // Build order by clause
+    let orderByClause = [desc(mainProducts.createdAt)];
+    if (sortBy) {
+      switch (sortBy) {
+        case "price_low":
+          orderByClause = [
+            sql`CAST(${mainProducts.sellingPrice} AS DECIMAL) ASC`
+          ];
+          break;
+        case "price_high":
+          orderByClause = [
+            sql`CAST(${mainProducts.sellingPrice} AS DECIMAL) DESC`
+          ];
+          break;
+        case "name":
+          orderByClause = [sql`name ASC`];
+          break;
+        case "newest":
+          orderByClause = [desc(mainProducts.createdAt)];
+          break;
+      }
+    }
+
+    // Get search results
+    const searchResults = await db.query.mainProducts.findMany({
+      where: and(...whereConditions),
+      with: {
+        group: true,
+        category: true,
+        brand: true,
+        productImages: true,
+        products: {
+          where: and(
+            eq(products.isAvailable, true),
+            eq(products.isArchived, false)
+          ),
+          with: {
+            purchases: {
+              where: eq(stores.mainBranch, true),
+              with: {
+                store: true
+              }
+            },
+            sellings: {
+              where: eq(stores.mainBranch, true),
+              with: {
+                store: true
+              }
+            }
+          }
+        }
+      },
+      orderBy: orderByClause,
+      limit: limit,
+      offset: offset
+    });
+
+    // Format products with stock calculation
+    const formattedProducts = [];
+    for (const product of searchResults) {
+      const formattedProduct =
+        await this.helperService.formatMainProductStock(product);
+      formattedProducts.push(formattedProduct);
+    }
+
+    // Get total count for pagination
+    const totalCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(mainProducts)
+      .where(and(...whereConditions));
+
+    return {
+      success: true,
+      searchResults: {
+        data: formattedProducts,
+        query: query,
+        pagination: {
+          page: page,
+          limit: limit,
+          total: totalCount[0]?.count || 0,
+          totalPages: Math.ceil((totalCount[0]?.count || 0) / limit)
+        }
+      }
     };
   }
 }

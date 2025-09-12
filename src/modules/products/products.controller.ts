@@ -10,15 +10,74 @@ import {
   UseGuards
 } from "@nestjs/common";
 import { AuthGuard } from "@nestjs/passport";
+import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { CreateReviewDto } from "./dto/create-review.dto";
 import { GetVariableProductDto } from "./dto/get-variable-product.dto";
 import { ProductsService } from "./products.service";
 
+@ApiTags("Products")
 @Controller("products")
 export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get("details/:id")
+  @ApiOperation({ summary: "Get product details by ID" })
+  @ApiParam({ name: "id", description: "Product ID", type: "number" })
+  @ApiResponse({
+    status: 200,
+    description: "Product details retrieved successfully",
+    example: {
+      success: true,
+      product: {
+        id: 1,
+        name: "Sample Product",
+        description: "This is a sample product description",
+        sellingPrice: "100.00",
+        discount: "10.00",
+        sku: "PROD-001",
+        isAvailable: true,
+        isFeatured: true,
+        group: {
+          id: 1,
+          name: "Electronics"
+        },
+        category: {
+          id: 1,
+          name: "Smartphones"
+        },
+        brand: {
+          id: 1,
+          name: "Samsung"
+        },
+        productImages: [
+          {
+            id: 1,
+            image: "product1.jpg",
+            isPrimary: true
+          }
+        ],
+        products: [
+          {
+            id: 1,
+            name: "Product Variant 1",
+            sellingPrice: "100.00",
+            stock: 50,
+            isAvailable: true
+          }
+        ],
+        stock: 50,
+        isInWishlist: false
+      }
+    }
+  })
+  @ApiResponse({
+    status: 404,
+    description: "Product not found",
+    example: {
+      success: false,
+      message: "Product not found"
+    }
+  })
   async getProductDetails(
     @Param("id", ParseIntPipe) productId: number,
     @Request() req
