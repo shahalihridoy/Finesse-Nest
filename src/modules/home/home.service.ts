@@ -7,7 +7,6 @@ import {
   contactUs,
   faqs,
   landingPageSettings,
-  mainProducts,
   mainSliders,
   middleBanners,
   middlePromotionalCards,
@@ -16,7 +15,8 @@ import {
   reports,
   settings,
   stores,
-  topPromotionalSliders
+  topPromotionalSliders,
+  variants
 } from "../../database/schema";
 
 @Injectable()
@@ -81,14 +81,14 @@ export class HomeService {
     const db = this.db.getDb();
 
     // Get featured products
-    const featuredProducts = await db.query.mainProducts.findMany({
-      where: eq(mainProducts.isFeatured, true),
+    const featuredProducts = await db.query.products.findMany({
+      where: eq(products.isFeatured, true),
       with: {
         group: true,
-        products: {
+        variants: {
           where: and(
-            eq(products.isAvailable, true),
-            eq(products.isArchived, false)
+            eq(variants.isAvailable, true),
+            eq(variants.isArchived, false)
           ),
           with: {
             purchases: {
@@ -117,14 +117,14 @@ export class HomeService {
     }
 
     // Get new products
-    const newProducts = await db.query.mainProducts.findMany({
-      where: eq(mainProducts.isNew, true),
+    const newProducts = await db.query.products.findMany({
+      where: eq(products.isNew, true),
       with: {
         group: true,
-        products: {
+        variants: {
           where: and(
-            eq(products.isAvailable, true),
-            eq(products.isArchived, false)
+            eq(variants.isAvailable, true),
+            eq(variants.isArchived, false)
           ),
           with: {
             purchases: {
@@ -159,7 +159,7 @@ export class HomeService {
       });
 
     const landingSettings = await db.query.landingPageSettings.findFirst({
-      where: eq(landingPageSettings.id, 1)
+      where: eq(landingPageSettings.isActive, true)
     });
 
     return {
@@ -174,7 +174,7 @@ export class HomeService {
   /**
    * Store reports - maintains exact same logic as original storeReports
    */
-  async storeReports(userId: number, reportData: any) {
+  async storeReports(userId: string, reportData: any) {
     const db = this.db.getDb();
 
     const [newReport] = await db
@@ -196,7 +196,7 @@ export class HomeService {
   /**
    * Get all reports - maintains exact same logic as original getAllReports
    */
-  async getAllReports(userId: number, page: number = 1, limit: number = 5) {
+  async getAllReports(userId: string, page: number = 1, limit: number = 5) {
     const db = this.db.getDb();
     const offset = (page - 1) * limit;
 
@@ -268,7 +268,7 @@ export class HomeService {
     const db = this.db.getDb();
 
     const settingsData = await db.query.settings.findFirst({
-      where: eq(settings.id, 1)
+      where: eq(settings.isActive, true)
     });
 
     return {
@@ -354,7 +354,7 @@ export class HomeService {
   async getAllImagesForMainProduct() {
     const db = this.db.getDb();
 
-    const productsList = await db.query.mainProducts.findMany({
+    const productsList = await db.query.products.findMany({
       with: {
         menu: true,
         group: true,
@@ -365,10 +365,10 @@ export class HomeService {
             tag: true
           }
         },
-        products: {
+        variants: {
           where: and(
-            eq(products.isAvailable, true),
-            eq(products.isArchived, false)
+            eq(variants.isAvailable, true),
+            eq(variants.isArchived, false)
           )
         }
       }

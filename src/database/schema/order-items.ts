@@ -2,7 +2,7 @@ import { relations } from "drizzle-orm";
 import { decimal, integer, pgTable, uuid } from "drizzle-orm/pg-core";
 import { baseFieldsNoOrg } from "./base";
 import { orders } from "./orders";
-import { products, productVariations } from "./products";
+import { products, variants } from "./products";
 
 export const orderItems = pgTable("order_items", {
   ...baseFieldsNoOrg,
@@ -10,7 +10,7 @@ export const orderItems = pgTable("order_items", {
     .notNull()
     .references(() => orders.id, { onDelete: "cascade" }),
   productId: uuid("product_id").references(() => products.id), // Optional for variant products
-  variantId: uuid("variant_id").references(() => productVariations.id), // Optional for standard products
+  variantId: uuid("variant_id").references(() => variants.id), // Optional for standard products
   quantity: integer("quantity").notNull(),
   unitPrice: decimal("unit_price", { precision: 10, scale: 2 }).notNull(),
   discountAmount: decimal("discount_amount", {
@@ -30,9 +30,9 @@ export const orderItemsRelations = relations(orderItems, ({ one }) => ({
     fields: [orderItems.productId],
     references: [products.id]
   }),
-  variant: one(productVariations, {
+  variant: one(variants, {
     fields: [orderItems.variantId],
-    references: [productVariations.id]
+    references: [variants.id]
   })
 }));
 

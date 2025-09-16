@@ -3,7 +3,7 @@ import {
   Controller,
   Get,
   Param,
-  ParseIntPipe,
+  ParseUUIDPipe,
   Post,
   Query,
   Request,
@@ -22,14 +22,19 @@ export class ProductsController {
 
   @Get("details/:id")
   @ApiOperation({ summary: "Get product details by ID" })
-  @ApiParam({ name: "id", description: "Product ID", type: "number" })
+  @ApiParam({
+    name: "id",
+    description: "Product ID",
+    type: "string",
+    format: "uuid"
+  })
   @ApiResponse({
     status: 200,
     description: "Product details retrieved successfully",
     example: {
       success: true,
       product: {
-        id: 1,
+        id: "550e8400-e29b-41d4-a716-446655440000",
         name: "Sample Product",
         description: "This is a sample product description",
         sellingPrice: "100.00",
@@ -38,27 +43,27 @@ export class ProductsController {
         isAvailable: true,
         isFeatured: true,
         group: {
-          id: 1,
+          id: "550e8400-e29b-41d4-a716-446655440001",
           name: "Electronics"
         },
         category: {
-          id: 1,
+          id: "550e8400-e29b-41d4-a716-446655440002",
           name: "Smartphones"
         },
         brand: {
-          id: 1,
+          id: "550e8400-e29b-41d4-a716-446655440003",
           name: "Samsung"
         },
         productImages: [
           {
-            id: 1,
+            id: "550e8400-e29b-41d4-a716-446655440004",
             image: "product1.jpg",
             isPrimary: true
           }
         ],
         products: [
           {
-            id: 1,
+            id: "550e8400-e29b-41d4-a716-446655440005",
             name: "Product Variant 1",
             sellingPrice: "100.00",
             stock: 50,
@@ -79,7 +84,7 @@ export class ProductsController {
     }
   })
   async getProductDetails(
-    @Param("id", ParseIntPipe) productId: number,
+    @Param("id", ParseUUIDPipe) productId: string,
     @Request() req
   ) {
     // Try to get user ID from JWT token if available
@@ -96,7 +101,7 @@ export class ProductsController {
   }
 
   @Get("variable/:id")
-  async getProductVariable(@Param("id", ParseIntPipe) productId: number) {
+  async getProductVariable(@Param("id", ParseUUIDPipe) productId: string) {
     return this.productsService.getProductVariable(productId);
   }
 
@@ -112,7 +117,7 @@ export class ProductsController {
 
   @Get("related/:id")
   async getRelatedProducts(
-    @Param("id", ParseIntPipe) productId: number,
+    @Param("id", ParseUUIDPipe) productId: string,
     @Query("limit") limit?: number
   ) {
     return this.productsService.getRelatedProducts(
@@ -123,7 +128,7 @@ export class ProductsController {
 
   @Get("reviews/:id")
   async getProductReviews(
-    @Param("id", ParseIntPipe) productId: number,
+    @Param("id", ParseUUIDPipe) productId: string,
     @Query("page") page?: number,
     @Query("limit") limit?: number
   ) {
@@ -141,23 +146,23 @@ export class ProductsController {
   }
 
   @Get("stock/:id")
-  async getProductStock(@Param("id", ParseIntPipe) productId: number) {
+  async getProductStock(@Param("id", ParseUUIDPipe) productId: string) {
     return this.productsService.getProductStock(productId);
   }
 
   @Get("search")
   async searchProducts(
     @Query("q") query?: string,
-    @Query("categoryId") categoryId?: number,
-    @Query("groupId") groupId?: number,
-    @Query("brandId") brandId?: number,
+    @Query("categoryId") categoryId?: string,
+    @Query("groupId") groupId?: string,
+    @Query("brandId") brandId?: string,
     @Query("page") page?: number,
     @Query("limit") limit?: number
   ) {
     const filters: any = {};
-    if (categoryId) filters.categoryId = parseInt(categoryId.toString());
-    if (groupId) filters.groupId = parseInt(groupId.toString());
-    if (brandId) filters.brandId = parseInt(brandId.toString());
+    if (categoryId) filters.categoryId = categoryId;
+    if (groupId) filters.groupId = groupId;
+    if (brandId) filters.brandId = brandId;
 
     return this.productsService.searchProducts(
       query,

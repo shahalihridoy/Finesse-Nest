@@ -3,7 +3,7 @@ import {
   Delete,
   Get,
   Param,
-  ParseIntPipe,
+  ParseUUIDPipe,
   Post,
   Query,
   Request,
@@ -46,7 +46,7 @@ export class NotificationsController {
   @Post(":id/update")
   async updateNotification(
     @Request() req,
-    @Param("id", ParseIntPipe) notificationId: number
+    @Param("id", ParseUUIDPipe) notificationId: string
   ) {
     return this.notificationsService.updateNotification(
       req.user.id,
@@ -64,7 +64,7 @@ export class NotificationsController {
   @Delete(":id")
   async deleteNotification(
     @Request() req,
-    @Param("id", ParseIntPipe) notificationId: number
+    @Param("id", ParseUUIDPipe) notificationId: string
   ) {
     return this.notificationsService.deleteNotification(
       req.user.id,

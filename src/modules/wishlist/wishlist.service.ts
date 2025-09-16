@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { HelperService } from "../../common/services/helper.service";
 import { DatabaseService } from "../../database/database.service";
-import { products, stores, wishlists } from "../../database/schema";
+import { variants, wishlists } from "../../database/schema";
 
 @Injectable()
 export class WishlistService {
@@ -14,7 +14,7 @@ export class WishlistService {
   /**
    * Show user's wishlist - maintains exact same logic as original showWishList
    */
-  async showWishlist(userId: number, page: number = 1, limit: number = 10) {
+  async showWishlist(userId: string, page: number = 1, limit: number = 10) {
     const db = this.db.getDb();
     const offset = (page - 1) * limit;
 
@@ -27,25 +27,11 @@ export class WishlistService {
             category: true,
             brand: true,
             productImages: true,
-            products: {
+            variants: {
               where: and(
-                eq(products.isAvailable, true),
-                eq(products.isArchived, false)
-              ),
-              with: {
-                purchases: {
-                  where: eq(stores.mainBranch, true),
-                  with: {
-                    store: true
-                  }
-                },
-                sellings: {
-                  where: eq(stores.mainBranch, true),
-                  with: {
-                    store: true
-                  }
-                }
-              }
+                eq(variants.isAvailable, true),
+                eq(variants.isArchived, false)
+              )
             }
           }
         }
@@ -94,7 +80,7 @@ export class WishlistService {
   /**
    * Store wishlist item - maintains exact same logic as original storeWishList
    */
-  async storeWishlist(userId: number, productId: number) {
+  async storeWishlist(userId: string, productId: string) {
     const db = this.db.getDb();
 
     // Check if item already exists in wishlist
@@ -132,7 +118,7 @@ export class WishlistService {
   /**
    * Update wishlist item - maintains exact same logic as original updateWishlist
    */
-  async updateWishlist(userId: number, wishlistId: number, updateData: any) {
+  async updateWishlist(userId: string, wishlistId: string, updateData: any) {
     const db = this.db.getDb();
 
     // Verify wishlist item belongs to user
@@ -164,7 +150,7 @@ export class WishlistService {
   /**
    * Delete wishlist item - maintains exact same logic as original deleteWishlist
    */
-  async deleteWishlist(userId: number, wishlistId: number) {
+  async deleteWishlist(userId: string, wishlistId: string) {
     const db = this.db.getDb();
 
     // Verify wishlist item belongs to user
@@ -188,7 +174,7 @@ export class WishlistService {
   /**
    * Check if product is in wishlist
    */
-  async isInWishlist(userId: number, productId: number): Promise<boolean> {
+  async isInWishlist(userId: string, productId: string): Promise<boolean> {
     const db = this.db.getDb();
 
     const wishlistItem = await db.query.wishlists.findFirst({
@@ -204,7 +190,7 @@ export class WishlistService {
   /**
    * Get wishlist count
    */
-  async getWishlistCount(userId: number): Promise<number> {
+  async getWishlistCount(userId: string): Promise<number> {
     const db = this.db.getDb();
 
     const countResult = await db

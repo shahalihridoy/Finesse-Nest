@@ -3,10 +3,10 @@ import { and, desc, eq, sql } from "drizzle-orm";
 import { HelperService } from "../../common/services/helper.service";
 import { DatabaseService } from "../../database/database.service";
 import {
-  mainProducts,
   products,
   reviews,
   stores,
+  variants,
   wishlists
 } from "../../database/schema";
 
@@ -20,11 +20,11 @@ export class ProductsService {
   /**
    * Get product details - maintains exact same logic as original getProductDetails
    */
-  async getProductDetails(productId: number, userId?: number) {
+  async getProductDetails(productId: string, userId?: string) {
     const db = this.db.getDb();
 
-    const product = await db.query.mainProducts.findFirst({
-      where: eq(mainProducts.id, productId),
+    const product = await db.query.products.findFirst({
+      where: eq(products.id, productId),
       with: {
         menu: true,
         group: true,
@@ -48,10 +48,10 @@ export class ProductsService {
           orderBy: [desc(reviews.createdAt)],
           limit: 10
         },
-        products: {
+        variants: {
           where: and(
-            eq(products.isAvailable, true),
-            eq(products.isArchived, false)
+            eq(variants.isAvailable, true),
+            eq(variants.isArchived, false)
           ),
           with: {
             productImages: true,
@@ -100,16 +100,16 @@ export class ProductsService {
   /**
    * Get product variations - maintains exact same logic as original getProductVariable
    */
-  async getProductVariable(productId: number) {
+  async getProductVariable(productId: string) {
     const db = this.db.getDb();
 
-    const product = await db.query.mainProducts.findFirst({
-      where: eq(mainProducts.id, productId),
+    const product = await db.query.products.findFirst({
+      where: eq(products.id, productId),
       with: {
-        products: {
+        variants: {
           where: and(
-            eq(products.isAvailable, true),
-            eq(products.isArchived, false)
+            eq(variants.isAvailable, true),
+            eq(variants.isArchived, false)
           ),
           with: {
             productImages: true,
@@ -136,7 +136,7 @@ export class ProductsService {
 
     // Format each variation product with stock - exact same logic as original
     const formattedVariations = [];
-    for (const variation of product.products) {
+    for (const variation of product.variants) {
       const formattedVariation =
         await this.helperService.formatVariationProductStock(variation);
       formattedVariations.push(formattedVariation);
@@ -151,31 +151,16 @@ export class ProductsService {
   /**
    * Get variable product by attributes - maintains exact same logic as original getVariableProduct
    */
-  async getVariableProduct(productId: number, attributes: any) {
+  async getVariableProduct(productId: string, attributes: any) {
     const db = this.db.getDb();
 
     // Find the specific variation based on attributes
-    const variation = await db.query.products.findFirst({
+    const variation = await db.query.variants.findFirst({
       where: and(
-        eq(products.mproductId, productId),
-        eq(products.isAvailable, true),
-        eq(products.isArchived, false)
-      ),
-      with: {
-        productImages: true,
-        purchases: {
-          where: eq(stores.mainBranch, true),
-          with: {
-            store: true
-          }
-        },
-        sellings: {
-          where: eq(stores.mainBranch, true),
-          with: {
-            store: true
-          }
-        }
-      }
+        eq(variants.productId, productId),
+        eq(variants.isAvailable, true),
+        eq(variants.isArchived, false)
+      )
     });
 
     if (!variation) {
@@ -195,12 +180,12 @@ export class ProductsService {
   /**
    * Get related products - maintains exact same logic as original relatedProduct
    */
-  async getRelatedProducts(productId: number, limit: number = 8) {
+  async getRelatedProducts(productId: string, limit: number = 8) {
     const db = this.db.getDb();
 
     // Get the main product to find related products by category
-    const mainProduct = await db.query.mainProducts.findFirst({
-      where: eq(mainProducts.id, productId),
+    const mainProduct = await db.query.products.findFirst({
+      where: eq(products.id, productId),
       columns: {
         categoryId: true,
         groupId: true
@@ -212,11 +197,11 @@ export class ProductsService {
     }
 
     // Get related products from same category - exact same logic as original
-    const relatedProducts = await db.query.mainProducts.findMany({
+    const relatedProducts = await db.query.products.findMany({
       where: and(
-        eq(mainProducts.categoryId, mainProduct.categoryId),
-        eq(mainProducts.isAvailable, true),
-        eq(mainProducts.isArchived, false),
+        eq(products.categoryId, mainProduct.categoryId),
+        eq(products.isAvailable, true),
+        eq(products.isArchived, false),
         sql`id != ${productId}` // Exclude current product
       ),
       with: {
@@ -224,10 +209,10 @@ export class ProductsService {
         category: true,
         brand: true,
         productImages: true,
-        products: {
+        variants: {
           where: and(
-            eq(products.isAvailable, true),
-            eq(products.isArchived, false)
+            eq(variants.isAvailable, true),
+            eq(variants.isArchived, false)
           ),
           with: {
             purchases: {
@@ -266,7 +251,7 @@ export class ProductsService {
    * Get product reviews - maintains exact same logic as original showReviews
    */
   async getProductReviews(
-    productId: number,
+    productId: string,
     page: number = 1,
     limit: number = 10
   ) {
@@ -315,7 +300,7 @@ export class ProductsService {
   /**
    * Store product review - maintains exact same logic as original storeReview
    */
-  async storeReview(userId: number, reviewData: any) {
+  async storeReview(userId: string, reviewData: any) {
     const db = this.db.getDb();
 
     const [newReview] = await db
@@ -342,54 +327,23 @@ export class ProductsService {
   /**
    * Get product stock - maintains exact same logic as original stock calculation
    */
-  async getProductStock(productId: number) {
+  async getProductStock(productId: string) {
     const db = this.db.getDb();
 
     // Get all variations of the main product
-    const variations = await db.query.products.findMany({
+    const variations = await db.query.variants.findMany({
       where: and(
-        eq(products.mproductId, productId),
-        eq(products.isAvailable, true),
-        eq(products.isArchived, false)
-      ),
-      with: {
-        purchases: {
-          where: eq(stores.mainBranch, true),
-          with: {
-            store: true
-          }
-        },
-        sellings: {
-          where: eq(stores.mainBranch, true),
-          with: {
-            store: true
-          }
-        }
-      }
+        eq(variants.productId, productId),
+        eq(variants.isAvailable, true),
+        eq(variants.isArchived, false)
+      )
     });
 
     let totalStock = 0;
 
-    // Calculate total stock from all variations - exact same logic as original
+    // Calculate total stock from all variations
     for (const variation of variations) {
-      let variationStock = 0;
-
-      if (variation.purchases && variation.purchases.length > 0) {
-        variationStock = variation.purchases.reduce(
-          (sum, purchase) => sum + purchase.quantity,
-          0
-        );
-      }
-
-      if (variation.sellings && variation.sellings.length > 0) {
-        const soldStock = variation.sellings.reduce(
-          (sum, selling) => sum + selling.quantity,
-          0
-        );
-        variationStock = variationStock - soldStock;
-      }
-
-      totalStock += variationStock;
+      totalStock += variation.stock || 0;
     }
 
     return {
@@ -413,8 +367,8 @@ export class ProductsService {
     const offset = (page - 1) * limit;
 
     let whereConditions = [
-      eq(mainProducts.isAvailable, true),
-      eq(mainProducts.isArchived, false)
+      eq(products.isAvailable, true),
+      eq(products.isArchived, false)
     ];
 
     // Add search query condition
@@ -426,28 +380,28 @@ export class ProductsService {
 
     // Add filters
     if (filters.categoryId) {
-      whereConditions.push(eq(mainProducts.categoryId, filters.categoryId));
+      whereConditions.push(eq(products.categoryId, filters.categoryId));
     }
 
     if (filters.groupId) {
-      whereConditions.push(eq(mainProducts.groupId, filters.groupId));
+      whereConditions.push(eq(products.groupId, filters.groupId));
     }
 
     if (filters.brandId) {
-      whereConditions.push(eq(mainProducts.brandId, filters.brandId));
+      whereConditions.push(eq(products.brandId, filters.brandId));
     }
 
-    const searchResults = await db.query.mainProducts.findMany({
+    const searchResults = await db.query.products.findMany({
       where: and(...whereConditions),
       with: {
         group: true,
         category: true,
         brand: true,
         productImages: true,
-        products: {
+        variants: {
           where: and(
-            eq(products.isAvailable, true),
-            eq(products.isArchived, false)
+            eq(variants.isAvailable, true),
+            eq(variants.isArchived, false)
           ),
           with: {
             purchases: {
@@ -480,7 +434,7 @@ export class ProductsService {
     // Get total count for pagination
     const totalCount = await db
       .select({ count: sql<number>`count(*)` })
-      .from(mainProducts)
+      .from(products)
       .where(and(...whereConditions));
 
     return {

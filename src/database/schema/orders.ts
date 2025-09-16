@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
   boolean,
   decimal,
+  index,
   integer,
   json,
   pgTable,
@@ -13,23 +14,45 @@ import {
 import { baseFieldsNoOrg } from "./base";
 
 // Orders
-export const orders = pgTable("orders", {
-  ...baseFieldsNoOrg,
-  userId: uuid("user_id").notNull(),
-  orderNo: varchar("order_no", { length: 255 }).notNull().unique(),
-  status: varchar("status", { length: 50 }).default("Pending"),
-  paymentStatus: varchar("payment_status", { length: 50 }).default("Pending"),
-  paymentMethod: varchar("payment_method", { length: 50 }),
-  subTotal: decimal("sub_total", { precision: 10, scale: 2 }).notNull(),
-  discount: decimal("discount", { precision: 10, scale: 2 }).default("0"),
-  shippingCost: decimal("shipping_cost", { precision: 10, scale: 2 }).default(
-    "0"
-  ),
-  grandTotal: decimal("grand_total", { precision: 10, scale: 2 }).notNull(),
-  shippingDetails: json("shipping_details"),
-  notes: text("notes"),
-  orderDate: timestamp("order_date").defaultNow()
-});
+export const orders = pgTable(
+  "orders",
+  {
+    ...baseFieldsNoOrg,
+    userId: uuid("user_id").notNull(),
+    orderNo: varchar("order_no", { length: 255 }).notNull().unique(),
+    status: varchar("status", { length: 50 }).default("Pending"),
+    paymentStatus: varchar("payment_status", { length: 50 }).default("Pending"),
+    paymentMethod: varchar("payment_method", { length: 50 }),
+    subTotal: decimal("sub_total", { precision: 10, scale: 2 }).notNull(),
+    discount: decimal("discount", { precision: 10, scale: 2 }).default("0"),
+    shippingCost: decimal("shipping_cost", { precision: 10, scale: 2 }).default(
+      "0"
+    ),
+    grandTotal: decimal("grand_total", { precision: 10, scale: 2 }).notNull(),
+    shippingDetails: json("shipping_details"),
+    notes: text("notes"),
+    orderDate: timestamp("order_date").defaultNow()
+  },
+  (table) => ({
+    // Performance indexes based on query analysis
+    userIdx: index("orders_user_idx").on(table.userId),
+    statusIdx: index("orders_status_idx").on(table.status),
+    paymentStatusIdx: index("orders_payment_status_idx").on(
+      table.paymentStatus
+    ),
+    createdAtIdx: index("orders_created_at_idx").on(table.createdAt),
+    orderDateIdx: index("orders_order_date_idx").on(table.orderDate),
+    // Composite indexes for most common queries
+    userCreatedIdx: index("orders_user_created_idx").on(
+      table.userId,
+      table.createdAt
+    ),
+    userStatusIdx: index("orders_user_status_idx").on(
+      table.userId,
+      table.status
+    )
+  })
+);
 
 // Order Details
 export const orderDetails = pgTable("order_details", {
@@ -192,13 +215,13 @@ export const cartsRelations = relations(carts, ({ one }) => ({
     fields: [carts.userId],
     references: [users.id]
   }),
-  mainProduct: one(mainProducts, {
+  mainProduct: one(products, {
     fields: [carts.mproductId],
-    references: [mainProducts.id]
-  }),
-  product: one(products, {
-    fields: [carts.productId],
     references: [products.id]
+  }),
+  variant: one(variants, {
+    fields: [carts.productId],
+    references: [variants.id]
   })
 }));
 
@@ -230,13 +253,13 @@ export const preorderCartsRelations = relations(preorderCarts, ({ one }) => ({
     fields: [preorderCarts.userId],
     references: [users.id]
   }),
-  mainProduct: one(mainProducts, {
+  mainProduct: one(products, {
     fields: [preorderCarts.mproductId],
-    references: [mainProducts.id]
-  }),
-  product: one(products, {
-    fields: [preorderCarts.productId],
     references: [products.id]
+  }),
+  variant: one(variants, {
+    fields: [preorderCarts.productId],
+    references: [variants.id]
   })
 }));
 
@@ -276,5 +299,5 @@ export const userAreasRelations = relations(userAreas, ({ one }) => ({
 }));
 
 // Import other schemas for relations
-import { mainProducts, products } from "./products";
+import { products, variants } from "./products";
 import { users } from "./users";

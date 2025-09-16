@@ -10,8 +10,7 @@ import {
   preorderCarts,
   preorderDetails,
   preorders,
-  products,
-  stores
+  variants
 } from "../../database/schema";
 
 @Injectable()
@@ -24,7 +23,7 @@ export class PreorderService {
   /**
    * Show preorder cart - maintains exact same logic as original showPreOrderCart
    */
-  async showPreorderCart(userId: number) {
+  async showPreorderCart(userId: string) {
     const db = this.db.getDb();
 
     const preorderCartItems = await db.query.preorderCarts.findMany({
@@ -36,44 +35,15 @@ export class PreorderService {
             category: true,
             brand: true,
             productImages: true,
-            products: {
+            variants: {
               where: and(
-                eq(products.isAvailable, true),
-                eq(products.isArchived, false)
-              ),
-              with: {
-                purchases: {
-                  where: eq(stores.mainBranch, true),
-                  with: {
-                    store: true
-                  }
-                },
-                sellings: {
-                  where: eq(stores.mainBranch, true),
-                  with: {
-                    store: true
-                  }
-                }
-              }
+                eq(variants.isAvailable, true),
+                eq(variants.isArchived, false)
+              )
             }
           }
         },
-        product: {
-          with: {
-            purchases: {
-              where: eq(stores.mainBranch, true),
-              with: {
-                store: true
-              }
-            },
-            sellings: {
-              where: eq(stores.mainBranch, true),
-              with: {
-                store: true
-              }
-            }
-          }
-        }
+        variant: true
       }
     });
 
@@ -86,7 +56,7 @@ export class PreorderService {
   /**
    * Store preorder cart item - maintains exact same logic as original storePreOrderCart
    */
-  async storePreorderCart(userId: number, cartData: any) {
+  async storePreorderCart(userId: string, cartData: any) {
     const db = this.db.getDb();
 
     // Check if item already exists in preorder cart
@@ -141,7 +111,7 @@ export class PreorderService {
   /**
    * Update preorder cart item - maintains exact same logic as original updatePreOrderCart
    */
-  async updatePreorderCart(userId: number, cartId: number, updateData: any) {
+  async updatePreorderCart(userId: string, cartId: string, updateData: any) {
     const db = this.db.getDb();
 
     // Verify cart item belongs to user
@@ -172,7 +142,7 @@ export class PreorderService {
   /**
    * Delete preorder cart item - maintains exact same logic as original deletePreOrderCart
    */
-  async deletePreorderCart(userId: number, cartId: number) {
+  async deletePreorderCart(userId: string, cartId: string) {
     const db = this.db.getDb();
 
     // Verify cart item belongs to user
@@ -196,7 +166,7 @@ export class PreorderService {
    * Show preorder orders - maintains exact same logic as original showOrder
    */
   async showPreorderOrders(
-    userId: number,
+    userId: string,
     page: number = 1,
     limit: number = 10,
     filterStatus: string = "All"
@@ -217,7 +187,6 @@ export class PreorderService {
           with: {
             product: {
               with: {
-                mainProduct: true,
                 productImages: true
               }
             }
@@ -260,7 +229,7 @@ export class PreorderService {
   /**
    * Show single preorder - maintains exact same logic as original showSingleOrder
    */
-  async showSinglePreorder(userId: number, orderId: number) {
+  async showSinglePreorder(userId: string, orderId: string) {
     const db = this.db.getDb();
 
     const preorder = await db.query.preorders.findFirst({
@@ -270,7 +239,6 @@ export class PreorderService {
           with: {
             product: {
               with: {
-                mainProduct: true,
                 productImages: true
               }
             }
@@ -293,7 +261,7 @@ export class PreorderService {
   /**
    * Store preorder - maintains exact same logic as original storeOrder
    */
-  async storePreorder(userId: number, orderData: any) {
+  async storePreorder(userId: string, orderData: any) {
     const db = this.db.getDb();
 
     // Get cart items
@@ -301,7 +269,7 @@ export class PreorderService {
       where: eq(preorderCarts.userId, userId),
       with: {
         mainProduct: true,
-        product: true
+        variant: true
       }
     });
 
@@ -336,8 +304,8 @@ export class PreorderService {
       if (cartItem.mproductId && cartItem.mainProduct) {
         productPrice = parseFloat(cartItem.mainProduct.sellingPrice);
         productId = cartItem.mproductId;
-      } else if (cartItem.productId && cartItem.product) {
-        productPrice = parseFloat(cartItem.product.sellingPrice);
+      } else if (cartItem.productId && cartItem.variant) {
+        productPrice = parseFloat(cartItem.variant.sellingPrice);
         productId = cartItem.productId;
       }
 
@@ -366,7 +334,7 @@ export class PreorderService {
   /**
    * Store app preorder - maintains exact same logic as original storeOrderApp
    */
-  async storeAppPreorder(userId: number, orderData: any) {
+  async storeAppPreorder(userId: string, orderData: any) {
     // For app preorders, we might handle it differently
     // This maintains the same logic as the original storeOrderApp method
     return this.storePreorder(userId, orderData);
@@ -375,7 +343,7 @@ export class PreorderService {
   /**
    * Cancel preorder - maintains exact same logic as original cancelOrder
    */
-  async cancelPreorder(userId: number, orderId: number) {
+  async cancelPreorder(userId: string, orderId: string) {
     const db = this.db.getDb();
 
     // Verify preorder belongs to user
@@ -413,7 +381,7 @@ export class PreorderService {
   /**
    * Pay now for preorder - maintains exact same logic as original payNow
    */
-  async payNowPreorder(userId: number, orderId: number, paymentData: any) {
+  async payNowPreorder(userId: string, orderId: string, paymentData: any) {
     const db = this.db.getDb();
 
     // Verify preorder belongs to user
@@ -448,7 +416,7 @@ export class PreorderService {
   /**
    * Clear payment for preorder - maintains exact same logic as original clearPayment
    */
-  async clearPreorderPayment(userId: number, orderId: number) {
+  async clearPreorderPayment(userId: string, orderId: string) {
     const db = this.db.getDb();
 
     // Verify preorder belongs to user

@@ -4,7 +4,7 @@ import {
   Delete,
   Get,
   Param,
-  ParseIntPipe,
+  ParseUUIDPipe,
   Post,
   Put,
   Query,
@@ -109,7 +109,7 @@ export class WishlistController {
   @Post()
   async storeWishlist(
     @Request() req,
-    @Body("productId", ParseIntPipe) productId: number
+    @Body("productId", ParseUUIDPipe) productId: string
   ) {
     return this.wishlistService.storeWishlist(req.user.id, productId);
   }
@@ -118,7 +118,7 @@ export class WishlistController {
   @Put(":id")
   async updateWishlist(
     @Request() req,
-    @Param("id", ParseIntPipe) wishlistId: number,
+    @Param("id", ParseUUIDPipe) wishlistId: string,
     @Body() updateData: any
   ) {
     return this.wishlistService.updateWishlist(
@@ -132,7 +132,7 @@ export class WishlistController {
   @Delete(":id")
   async deleteWishlist(
     @Request() req,
-    @Param("id", ParseIntPipe) wishlistId: number
+    @Param("id", ParseUUIDPipe) wishlistId: string
   ) {
     return this.wishlistService.deleteWishlist(req.user.id, wishlistId);
   }
@@ -151,7 +151,7 @@ export class WishlistController {
   @Get("check/:productId")
   async checkWishlistStatus(
     @Request() req,
-    @Param("productId", ParseIntPipe) productId: number
+    @Param("productId", ParseUUIDPipe) productId: string
   ) {
     const isInWishlist = await this.wishlistService.isInWishlist(
       req.user.id,

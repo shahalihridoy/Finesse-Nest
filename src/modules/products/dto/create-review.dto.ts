@@ -4,6 +4,7 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   Min
 } from "class-validator";
@@ -11,10 +12,11 @@ import {
 export class CreateReviewDto {
   @ApiProperty({
     description: "ID of the product being reviewed",
-    example: 123
+    example: "550e8400-e29b-41d4-a716-446655440000"
   })
-  @IsNumber()
-  productId: number;
+  @IsString()
+  @IsUUID()
+  productId: string;
 
   @ApiProperty({
     description: "Rating for the product (1-5 stars)",

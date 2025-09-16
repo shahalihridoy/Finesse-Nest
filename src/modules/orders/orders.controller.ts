@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   ParseIntPipe,
+  ParseUUIDPipe,
   Post,
   Query,
   Request,
@@ -50,7 +51,7 @@ export class OrdersController {
   @Post(":id/cancel")
   async cancelOrder(
     @Request() req,
-    @Param("id", ParseIntPipe) orderId: number
+    @Param("id", ParseUUIDPipe) orderId: string
   ) {
     return this.ordersService.cancelOrder(req.user.id, orderId);
   }
@@ -59,7 +60,7 @@ export class OrdersController {
   @Post(":id/pay")
   async payNow(
     @Request() req,
-    @Param("id", ParseIntPipe) orderId: number,
+    @Param("id", ParseUUIDPipe) orderId: string,
     @Body() payNowDto: PayNowDto
   ) {
     return this.ordersService.payNow(req.user.id, orderId, payNowDto);
@@ -69,14 +70,14 @@ export class OrdersController {
   @Post(":id/clear-payment")
   async clearPayment(
     @Request() req,
-    @Param("id", ParseIntPipe) orderId: number
+    @Param("id", ParseUUIDPipe) orderId: string
   ) {
     return this.ordersService.clearPayment(req.user.id, orderId);
   }
 
   @Get("check-stock")
   async checkStock(
-    @Query("productId", ParseIntPipe) productId: number,
+    @Query("productId", ParseUUIDPipe) productId: string,
     @Query("quantity", ParseIntPipe) quantity: number
   ) {
     return this.ordersService.checkStock(productId, quantity);
@@ -113,7 +114,7 @@ export class OrdersController {
   }
 
   @Get("areas/:zoneId")
-  async getZoneAreas(@Param("zoneId", ParseIntPipe) zoneId: number) {
+  async getZoneAreas(@Param("zoneId", ParseUUIDPipe) zoneId: string) {
     return this.ordersService.getZoneAreas(zoneId);
   }
 }

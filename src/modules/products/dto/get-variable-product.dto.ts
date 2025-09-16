@@ -1,13 +1,14 @@
 import { ApiProperty } from "@nestjs/swagger";
-import { IsNumber, IsObject } from "class-validator";
+import { IsObject, IsString, IsUUID } from "class-validator";
 
 export class GetVariableProductDto {
   @ApiProperty({
     description: "ID of the variable product",
-    example: 456
+    example: "550e8400-e29b-41d4-a716-446655440000"
   })
-  @IsNumber()
-  productId: number;
+  @IsString()
+  @IsUUID()
+  productId: string;
 
   @ApiProperty({
     description: "Product attributes and variations",

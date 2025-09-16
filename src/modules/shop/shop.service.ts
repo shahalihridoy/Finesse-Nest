@@ -5,10 +5,10 @@ import { DatabaseService } from "../../database/database.service";
 import {
   brands,
   groups,
-  mainProducts,
   menus,
   products,
-  stores
+  stores,
+  variants
 } from "../../database/schema";
 
 @Injectable()
@@ -148,9 +148,9 @@ export class ShopService {
   async getShopProducts(
     page: number = 1,
     limit: number = 12,
-    categoryId?: number,
-    brandId?: number,
-    groupId?: number,
+    categoryId?: string,
+    brandId?: string,
+    groupId?: string,
     search?: string,
     sortBy?: string,
     minPrice?: number,
@@ -161,20 +161,20 @@ export class ShopService {
 
     // Build where conditions
     const whereConditions = [
-      eq(mainProducts.isAvailable, true),
-      eq(mainProducts.isArchived, false)
+      eq(products.isAvailable, true),
+      eq(products.isArchived, false)
     ];
 
     if (categoryId) {
-      whereConditions.push(eq(mainProducts.categoryId, categoryId));
+      whereConditions.push(eq(products.categoryId, categoryId));
     }
 
     if (brandId) {
-      whereConditions.push(eq(mainProducts.brandId, brandId));
+      whereConditions.push(eq(products.brandId, brandId));
     }
 
     if (groupId) {
-      whereConditions.push(eq(mainProducts.groupId, groupId));
+      whereConditions.push(eq(products.groupId, groupId));
     }
 
     if (search) {
@@ -188,51 +188,47 @@ export class ShopService {
 
     if (minPrice !== undefined) {
       whereConditions.push(
-        sql`CAST(${mainProducts.sellingPrice} AS DECIMAL) >= ${minPrice}`
+        sql`CAST(${products.sellingPrice} AS DECIMAL) >= ${minPrice}`
       );
     }
 
     if (maxPrice !== undefined) {
       whereConditions.push(
-        sql`CAST(${mainProducts.sellingPrice} AS DECIMAL) <= ${maxPrice}`
+        sql`CAST(${products.sellingPrice} AS DECIMAL) <= ${maxPrice}`
       );
     }
 
     // Build order by clause
-    let orderByClause = [desc(mainProducts.createdAt)];
+    let orderByClause = [desc(products.createdAt)];
     if (sortBy) {
       switch (sortBy) {
         case "price_low":
-          orderByClause = [
-            sql`CAST(${mainProducts.sellingPrice} AS DECIMAL) ASC`
-          ];
+          orderByClause = [sql`CAST(${products.sellingPrice} AS DECIMAL) ASC`];
           break;
         case "price_high":
-          orderByClause = [
-            sql`CAST(${mainProducts.sellingPrice} AS DECIMAL) DESC`
-          ];
+          orderByClause = [sql`CAST(${products.sellingPrice} AS DECIMAL) DESC`];
           break;
         case "name":
           orderByClause = [sql`name ASC`];
           break;
         case "newest":
-          orderByClause = [desc(mainProducts.createdAt)];
+          orderByClause = [desc(products.createdAt)];
           break;
       }
     }
 
     // Get products
-    const shopProducts = await db.query.mainProducts.findMany({
+    const shopProducts = await db.query.products.findMany({
       where: and(...whereConditions),
       with: {
         group: true,
         category: true,
         brand: true,
         productImages: true,
-        products: {
+        variants: {
           where: and(
-            eq(products.isAvailable, true),
-            eq(products.isArchived, false)
+            eq(variants.isAvailable, true),
+            eq(variants.isArchived, false)
           ),
           with: {
             purchases: {
@@ -266,7 +262,7 @@ export class ShopService {
     // Get total count for pagination
     const totalCount = await db
       .select({ count: sql<number>`count(*)` })
-      .from(mainProducts)
+      .from(products)
       .where(and(...whereConditions));
 
     return {
@@ -289,21 +285,21 @@ export class ShopService {
   async getFeaturedProducts(limit: number = 8) {
     const db = this.db.getDb();
 
-    const featuredProducts = await db.query.mainProducts.findMany({
+    const featuredProducts = await db.query.products.findMany({
       where: and(
-        eq(mainProducts.isAvailable, true),
-        eq(mainProducts.isArchived, false),
-        eq(mainProducts.isFeatured, true)
+        eq(products.isAvailable, true),
+        eq(products.isArchived, false),
+        eq(products.isFeatured, true)
       ),
       with: {
         group: true,
         category: true,
         brand: true,
         productImages: true,
-        products: {
+        variants: {
           where: and(
-            eq(products.isAvailable, true),
-            eq(products.isArchived, false)
+            eq(variants.isAvailable, true),
+            eq(variants.isArchived, false)
           ),
           with: {
             purchases: {
@@ -321,7 +317,7 @@ export class ShopService {
           }
         }
       },
-      orderBy: [desc(mainProducts.createdAt)],
+      orderBy: [desc(products.createdAt)],
       limit: limit
     });
 
@@ -345,20 +341,20 @@ export class ShopService {
   async getLatestProducts(limit: number = 8) {
     const db = this.db.getDb();
 
-    const latestProducts = await db.query.mainProducts.findMany({
+    const latestProducts = await db.query.products.findMany({
       where: and(
-        eq(mainProducts.isAvailable, true),
-        eq(mainProducts.isArchived, false)
+        eq(products.isAvailable, true),
+        eq(products.isArchived, false)
       ),
       with: {
         group: true,
         category: true,
         brand: true,
         productImages: true,
-        products: {
+        variants: {
           where: and(
-            eq(products.isAvailable, true),
-            eq(products.isArchived, false)
+            eq(variants.isAvailable, true),
+            eq(variants.isArchived, false)
           ),
           with: {
             purchases: {
@@ -376,7 +372,7 @@ export class ShopService {
           }
         }
       },
-      orderBy: [desc(mainProducts.createdAt)],
+      orderBy: [desc(products.createdAt)],
       limit: limit
     });
 
@@ -408,8 +404,8 @@ export class ShopService {
 
     // Build where conditions for search
     const whereConditions = [
-      eq(mainProducts.isAvailable, true),
-      eq(mainProducts.isArchived, false),
+      eq(products.isAvailable, true),
+      eq(products.isArchived, false),
       or(
         like(sql`name`, `%${query}%`),
         like(sql`description`, `%${query}%`),
@@ -418,40 +414,36 @@ export class ShopService {
     ];
 
     // Build order by clause
-    let orderByClause = [desc(mainProducts.createdAt)];
+    let orderByClause = [desc(products.createdAt)];
     if (sortBy) {
       switch (sortBy) {
         case "price_low":
-          orderByClause = [
-            sql`CAST(${mainProducts.sellingPrice} AS DECIMAL) ASC`
-          ];
+          orderByClause = [sql`CAST(${products.sellingPrice} AS DECIMAL) ASC`];
           break;
         case "price_high":
-          orderByClause = [
-            sql`CAST(${mainProducts.sellingPrice} AS DECIMAL) DESC`
-          ];
+          orderByClause = [sql`CAST(${products.sellingPrice} AS DECIMAL) DESC`];
           break;
         case "name":
           orderByClause = [sql`name ASC`];
           break;
         case "newest":
-          orderByClause = [desc(mainProducts.createdAt)];
+          orderByClause = [desc(products.createdAt)];
           break;
       }
     }
 
     // Get search results
-    const searchResults = await db.query.mainProducts.findMany({
+    const searchResults = await db.query.products.findMany({
       where: and(...whereConditions),
       with: {
         group: true,
         category: true,
         brand: true,
         productImages: true,
-        products: {
+        variants: {
           where: and(
-            eq(products.isAvailable, true),
-            eq(products.isArchived, false)
+            eq(variants.isAvailable, true),
+            eq(variants.isArchived, false)
           ),
           with: {
             purchases: {
@@ -485,7 +477,7 @@ export class ShopService {
     // Get total count for pagination
     const totalCount = await db
       .select({ count: sql<number>`count(*)` })
-      .from(mainProducts)
+      .from(products)
       .where(and(...whereConditions));
 
     return {

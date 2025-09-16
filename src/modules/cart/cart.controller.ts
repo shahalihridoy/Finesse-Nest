@@ -4,7 +4,7 @@ import {
   Delete,
   Get,
   Param,
-  ParseIntPipe,
+  ParseUUIDPipe,
   Post,
   Put,
   Query,
@@ -50,7 +50,7 @@ export class CartController {
   @Put(":id")
   async updateCart(
     @Request() req,
-    @Param("id", ParseIntPipe) cartId: number,
+    @Param("id", ParseUUIDPipe) cartId: string,
     @Body() updateCartDto: UpdateCartDto
   ) {
     return this.cartService.updateCart(req.user.id, cartId, updateCartDto);
@@ -58,7 +58,7 @@ export class CartController {
 
   @UseGuards(AuthGuard("jwt"))
   @Delete(":id")
-  async deleteCart(@Request() req, @Param("id", ParseIntPipe) cartId: number) {
+  async deleteCart(@Request() req, @Param("id", ParseUUIDPipe) cartId: string) {
     return this.cartService.deleteCart(req.user.id, cartId);
   }
 

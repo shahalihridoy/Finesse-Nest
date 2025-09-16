@@ -15,9 +15,9 @@ import {
   products,
   purchases,
   sellings,
-  stores,
   userAreas,
   userCities,
+  variants,
   zones
 } from "../../database/schema";
 
@@ -31,7 +31,7 @@ export class OrdersService {
   /**
    * Show user's orders - maintains exact same logic as original showOrder
    */
-  async showOrders(userId: number, page: number = 1, limit: number = 10) {
+  async showOrders(userId: string, page: number = 1, limit: number = 10) {
     const db = this.db.getDb();
     const offset = (page - 1) * limit;
 
@@ -42,7 +42,6 @@ export class OrdersService {
           with: {
             product: {
               with: {
-                mainProduct: true,
                 productImages: true
               }
             }
@@ -84,7 +83,7 @@ export class OrdersService {
   /**
    * Store order - maintains exact same logic as original storeOrder
    */
-  async storeOrder(userId: number, orderData: any) {
+  async storeOrder(userId: string, orderData: any) {
     const db = this.db.getDb();
 
     // Generate order number - exact same logic as original
@@ -96,44 +95,15 @@ export class OrdersService {
       with: {
         mainProduct: {
           with: {
-            products: {
+            variants: {
               where: and(
-                eq(products.isAvailable, true),
-                eq(products.isArchived, false)
-              ),
-              with: {
-                purchases: {
-                  where: eq(stores.mainBranch, true),
-                  with: {
-                    store: true
-                  }
-                },
-                sellings: {
-                  where: eq(stores.mainBranch, true),
-                  with: {
-                    store: true
-                  }
-                }
-              }
+                eq(variants.isAvailable, true),
+                eq(variants.isArchived, false)
+              )
             }
           }
         },
-        product: {
-          with: {
-            purchases: {
-              where: eq(stores.mainBranch, true),
-              with: {
-                store: true
-              }
-            },
-            sellings: {
-              where: eq(stores.mainBranch, true),
-              with: {
-                store: true
-              }
-            }
-          }
-        }
+        variant: true
       }
     });
 
@@ -270,7 +240,7 @@ export class OrdersService {
   /**
    * Store app order - maintains exact same logic as original storeAppOrder
    */
-  async storeAppOrder(userId: number, orderData: any) {
+  async storeAppOrder(userId: string, orderData: any) {
     // For app orders, we might handle it differently
     // This maintains the same logic as the original storeAppOrder method
     return this.storeOrder(userId, orderData);
@@ -279,7 +249,7 @@ export class OrdersService {
   /**
    * Cancel order - maintains exact same logic as original cancelOrder
    */
-  async cancelOrder(userId: number, orderId: number) {
+  async cancelOrder(userId: string, orderId: string) {
     const db = this.db.getDb();
 
     // Verify order belongs to user
@@ -317,7 +287,7 @@ export class OrdersService {
   /**
    * Pay now - maintains exact same logic as original payNow
    */
-  async payNow(userId: number, orderId: number, paymentData: any) {
+  async payNow(userId: string, orderId: string, paymentData: any) {
     const db = this.db.getDb();
 
     // Verify order belongs to user
@@ -352,7 +322,7 @@ export class OrdersService {
   /**
    * Clear payment - maintains exact same logic as original clearPayment
    */
-  async clearPayment(userId: number, orderId: number) {
+  async clearPayment(userId: string, orderId: string) {
     const db = this.db.getDb();
 
     // Verify order belongs to user
@@ -382,7 +352,7 @@ export class OrdersService {
   /**
    * Check stock - maintains exact same logic as original checkStock
    */
-  async checkStock(productId: number, quantity: number) {
+  async checkStock(productId: string, quantity: number) {
     const db = this.db.getDb();
 
     // Get product stock
@@ -391,8 +361,8 @@ export class OrdersService {
         stock: sql<number>`COALESCE(SUM(p.quantity - COALESCE(s.quantity, 0)), 0)`
       })
       .from(products)
-      .leftJoin(purchases, eq(products.id, purchases.productId))
-      .leftJoin(sellings, eq(products.id, sellings.productId))
+      .leftJoin(purchases, eq(variants.id, purchases.variantId))
+      .leftJoin(sellings, eq(variants.id, sellings.variantId))
       .where(eq(products.id, productId))
       .groupBy(products.id);
 
@@ -424,7 +394,10 @@ export class OrdersService {
       throw new BadRequestException("Coupon usage limit exceeded");
     }
 
-    if (coupon.minOrderAmount && orderAmount < parseFloat(coupon.minOrderAmount)) {
+    if (
+      coupon.minOrderAmount &&
+      orderAmount < parseFloat(coupon.minOrderAmount)
+    ) {
       throw new BadRequestException(
         `Minimum order amount is ${coupon.minOrderAmount}`
       );
@@ -520,7 +493,7 @@ export class OrdersService {
   /**
    * Get zone areas - maintains exact same logic as original showZoneAreas
    */
-  async getZoneAreas(zoneId: number) {
+  async getZoneAreas(zoneId: string) {
     const db = this.db.getDb();
 
     const areas = await db.query.userAreas.findMany({

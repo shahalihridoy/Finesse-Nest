@@ -2,6 +2,7 @@ import { relations } from "drizzle-orm";
 import {
   boolean,
   decimal,
+  index,
   integer,
   json,
   pgTable,
@@ -48,40 +49,69 @@ export const brands = pgTable("brands", {
   logo: varchar("logo", { length: 500 })
 });
 
-// Main Products Table
-export const mainProducts = pgTable("main_products", {
-  ...baseFieldsNoOrg,
-  menuId: uuid("menu_id")
-    .notNull()
-    .references(() => menus.id, { onDelete: "cascade" }),
-  groupId: uuid("group_id")
-    .notNull()
-    .references(() => groups.id, { onDelete: "cascade" }),
-  categoryId: uuid("category_id")
-    .notNull()
-    .references(() => categories.id, { onDelete: "cascade" }),
-  brandId: uuid("brand_id").references(() => brands.id),
-  productName: varchar("product_name", { length: 255 }).notNull(),
-  slug: varchar("slug", { length: 255 }),
-  productImage: varchar("product_image", { length: 500 }),
-  model: varchar("model", { length: 255 }),
-  sellingPrice: decimal("selling_price", { precision: 10, scale: 2 }).notNull(),
-  discount: decimal("discount", { precision: 5, scale: 2 }).default("0"),
-  briefDescription: text("brief_description"),
-  description: text("description"),
-  images: json("images"),
-  isNew: boolean("is_new").default(false),
-  isFeatured: boolean("is_featured").default(false),
-  isAvailable: boolean("is_available").default(true),
-  isArchived: boolean("is_archived").default(false)
-});
+// Products Table
+export const products = pgTable(
+  "products",
+  {
+    ...baseFieldsNoOrg,
+    menuId: uuid("menu_id")
+      .notNull()
+      .references(() => menus.id, { onDelete: "cascade" }),
+    groupId: uuid("group_id")
+      .notNull()
+      .references(() => groups.id, { onDelete: "cascade" }),
+    categoryId: uuid("category_id")
+      .notNull()
+      .references(() => categories.id, { onDelete: "cascade" }),
+    brandId: uuid("brand_id").references(() => brands.id),
+    productName: varchar("product_name", { length: 255 }).notNull(),
+    slug: varchar("slug", { length: 255 }),
+    productImage: varchar("product_image", { length: 500 }),
+    model: varchar("model", { length: 255 }),
+    sellingPrice: decimal("selling_price", {
+      precision: 10,
+      scale: 2
+    }).notNull(),
+    discount: decimal("discount", { precision: 5, scale: 2 }).default("0"),
+    briefDescription: text("brief_description"),
+    description: text("description"),
+    images: json("images"),
+    isNew: boolean("is_new").default(false),
+    isFeatured: boolean("is_featured").default(false),
+    isAvailable: boolean("is_available").default(true),
+    isArchived: boolean("is_archived").default(false)
+  },
+  (table) => ({
+    // Performance indexes based on query analysis
+    categoryIdx: index("products_category_idx").on(table.categoryId),
+    brandIdx: index("products_brand_idx").on(table.brandId),
+    groupIdx: index("products_group_idx").on(table.groupId),
+    availableIdx: index("products_available_idx").on(table.isAvailable),
+    priceIdx: index("products_price_idx").on(table.sellingPrice),
+    featuredIdx: index("products_featured_idx").on(table.isFeatured),
+    nameIdx: index("products_name_idx").on(table.productName),
+    // Composite indexes for common query patterns
+    categoryAvailableIdx: index("products_category_available_idx").on(
+      table.categoryId,
+      table.isAvailable
+    ),
+    brandAvailableIdx: index("products_brand_available_idx").on(
+      table.brandId,
+      table.isAvailable
+    ),
+    groupAvailableIdx: index("products_group_available_idx").on(
+      table.groupId,
+      table.isAvailable
+    )
+  })
+);
 
-// Product Variations
-export const products = pgTable("products", {
+// Product Variants
+export const variants = pgTable("variants", {
   ...baseFieldsNoOrg,
-  mproductId: uuid("mproduct_id")
+  productId: uuid("product_id")
     .notNull()
-    .references(() => mainProducts.id, { onDelete: "cascade" }),
+    .references(() => products.id, { onDelete: "cascade" }),
   groupId: uuid("group_id")
     .notNull()
     .references(() => groups.id, { onDelete: "cascade" }),
@@ -132,7 +162,7 @@ export const reviews = pgTable("reviews", {
   ...baseFieldsNoOrg,
   productId: uuid("product_id")
     .notNull()
-    .references(() => mainProducts.id, { onDelete: "cascade" }),
+    .references(() => products.id, { onDelete: "cascade" }),
   userId: uuid("user_id").notNull(),
   reviewerId: uuid("reviewer_id").notNull(),
   rating: integer("rating").notNull(),
@@ -147,31 +177,31 @@ export const wishlists = pgTable("wishlists", {
   userId: uuid("user_id").notNull(),
   productId: uuid("product_id")
     .notNull()
-    .references(() => mainProducts.id, { onDelete: "cascade" })
+    .references(() => products.id, { onDelete: "cascade" })
 });
 
-// Product Variations (for complex product variations)
-export const productVariations = pgTable("product_variations", {
+// Variant Attributes (for complex product variations)
+export const variantAttributes = pgTable("variant_attributes", {
   ...baseFieldsNoOrg,
   productId: uuid("product_id")
     .notNull()
     .references(() => products.id, { onDelete: "cascade" }),
-  variationName: varchar("variation_name", { length: 255 }).notNull()
+  attributeName: varchar("attribute_name", { length: 255 }).notNull()
 });
 
-export const productVariationValues = pgTable("product_variation_values", {
+export const variantAttributeValues = pgTable("variant_attribute_values", {
   ...baseFieldsNoOrg,
-  pvariationId: uuid("pvariation_id")
+  attributeId: uuid("attribute_id")
     .notNull()
-    .references(() => productVariations.id, { onDelete: "cascade" }),
+    .references(() => variantAttributes.id, { onDelete: "cascade" }),
   value: varchar("value", { length: 255 }).notNull()
 });
 
-export const productVariationImages = pgTable("product_variation_images", {
+export const variantImages = pgTable("variant_images", {
   ...baseFieldsNoOrg,
-  productId: uuid("product_id")
+  variantId: uuid("variant_id")
     .notNull()
-    .references(() => products.id, { onDelete: "cascade" }),
+    .references(() => variants.id, { onDelete: "cascade" }),
   url: varchar("url", { length: 500 }).notNull(),
   alt: varchar("alt", { length: 255 })
 });
@@ -186,9 +216,9 @@ export const stores = pgTable("stores", {
 
 export const purchases = pgTable("purchases", {
   ...baseFieldsNoOrg,
-  productId: uuid("product_id")
+  variantId: uuid("variant_id")
     .notNull()
-    .references(() => products.id, { onDelete: "cascade" }),
+    .references(() => variants.id, { onDelete: "cascade" }),
   storeId: uuid("store_id")
     .notNull()
     .references(() => stores.id, { onDelete: "cascade" }),
@@ -200,9 +230,9 @@ export const purchases = pgTable("purchases", {
 
 export const sellings = pgTable("sellings", {
   ...baseFieldsNoOrg,
-  productId: uuid("product_id")
+  variantId: uuid("variant_id")
     .notNull()
-    .references(() => products.id, { onDelete: "cascade" }),
+    .references(() => variants.id, { onDelete: "cascade" }),
   storeId: uuid("store_id")
     .notNull()
     .references(() => stores.id, { onDelete: "cascade" }),
@@ -223,7 +253,7 @@ export const groupsRelations = relations(groups, ({ one, many }) => ({
     references: [menus.id]
   }),
   categories: many(categories),
-  mainProducts: many(mainProducts)
+  products: many(products)
 }));
 
 export const categoriesRelations = relations(categories, ({ one, many }) => ({
@@ -235,45 +265,18 @@ export const categoriesRelations = relations(categories, ({ one, many }) => ({
     fields: [categories.menuId],
     references: [menus.id]
   }),
-  mainProducts: many(mainProducts)
-}));
-
-export const brandsRelations = relations(brands, ({ many }) => ({
-  mainProducts: many(mainProducts),
   products: many(products)
 }));
 
-export const mainProductsRelations = relations(
-  mainProducts,
-  ({ one, many }) => ({
-    menu: one(menus, {
-      fields: [mainProducts.menuId],
-      references: [menus.id]
-    }),
-    group: one(groups, {
-      fields: [mainProducts.groupId],
-      references: [groups.id]
-    }),
-    category: one(categories, {
-      fields: [mainProducts.categoryId],
-      references: [categories.id]
-    }),
-    brand: one(brands, {
-      fields: [mainProducts.brandId],
-      references: [brands.id]
-    }),
-    products: many(products),
-    productImages: many(productImages),
-    productTags: many(productTags),
-    reviews: many(reviews),
-    wishlists: many(wishlists)
-  })
-);
+export const brandsRelations = relations(brands, ({ many }) => ({
+  products: many(products),
+  variants: many(variants)
+}));
 
 export const productsRelations = relations(products, ({ one, many }) => ({
-  mainProduct: one(mainProducts, {
-    fields: [products.mproductId],
-    references: [mainProducts.id]
+  menu: one(menus, {
+    fields: [products.menuId],
+    references: [menus.id]
   }),
   group: one(groups, {
     fields: [products.groupId],
@@ -287,15 +290,39 @@ export const productsRelations = relations(products, ({ one, many }) => ({
     fields: [products.brandId],
     references: [brands.id]
   }),
+  variants: many(variants),
+  productImages: many(productImages),
+  productTags: many(productTags),
+  reviews: many(reviews),
+  wishlists: many(wishlists)
+}));
+
+export const variantsRelations = relations(variants, ({ one, many }) => ({
+  product: one(products, {
+    fields: [variants.productId],
+    references: [products.id]
+  }),
+  group: one(groups, {
+    fields: [variants.groupId],
+    references: [groups.id]
+  }),
+  category: one(categories, {
+    fields: [variants.categoryId],
+    references: [categories.id]
+  }),
+  brand: one(brands, {
+    fields: [variants.brandId],
+    references: [brands.id]
+  }),
   productImages: many(productImages),
   purchases: many(purchases),
   sellings: many(sellings)
 }));
 
 export const productImagesRelations = relations(productImages, ({ one }) => ({
-  mainProduct: one(mainProducts, {
+  mainProduct: one(products, {
     fields: [productImages.productId],
-    references: [mainProducts.id]
+    references: [products.id]
   }),
   product: one(products, {
     fields: [productImages.productId],
@@ -308,9 +335,9 @@ export const tagsRelations = relations(tags, ({ many }) => ({
 }));
 
 export const productTagsRelations = relations(productTags, ({ one }) => ({
-  mainProduct: one(mainProducts, {
+  mainProduct: one(products, {
     fields: [productTags.productId],
-    references: [mainProducts.id]
+    references: [products.id]
   }),
   tag: one(tags, {
     fields: [productTags.tagId],
@@ -319,9 +346,9 @@ export const productTagsRelations = relations(productTags, ({ one }) => ({
 }));
 
 export const reviewsRelations = relations(reviews, ({ one }) => ({
-  mainProduct: one(mainProducts, {
+  mainProduct: one(products, {
     fields: [reviews.productId],
-    references: [mainProducts.id]
+    references: [products.id]
   }),
   user: one(users, {
     fields: [reviews.userId],
@@ -330,9 +357,9 @@ export const reviewsRelations = relations(reviews, ({ one }) => ({
 }));
 
 export const wishlistsRelations = relations(wishlists, ({ one }) => ({
-  mainProduct: one(mainProducts, {
+  mainProduct: one(products, {
     fields: [wishlists.productId],
-    references: [mainProducts.id]
+    references: [products.id]
   }),
   user: one(users, {
     fields: [wishlists.userId],
@@ -346,9 +373,9 @@ export const storesRelations = relations(stores, ({ many }) => ({
 }));
 
 export const purchasesRelations = relations(purchases, ({ one }) => ({
-  product: one(products, {
-    fields: [purchases.productId],
-    references: [products.id]
+  variant: one(variants, {
+    fields: [purchases.variantId],
+    references: [variants.id]
   }),
   store: one(stores, {
     fields: [purchases.storeId],
@@ -357,9 +384,9 @@ export const purchasesRelations = relations(purchases, ({ one }) => ({
 }));
 
 export const sellingsRelations = relations(sellings, ({ one }) => ({
-  product: one(products, {
-    fields: [sellings.productId],
-    references: [products.id]
+  variant: one(variants, {
+    fields: [sellings.variantId],
+    references: [variants.id]
   }),
   store: one(stores, {
     fields: [sellings.storeId],

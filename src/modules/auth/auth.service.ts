@@ -119,7 +119,7 @@ export class AuthService {
       const existingCustomer = await db.query.customers.findFirst({
         where: and(
           eq(customers.contact, registerData.contact),
-          eq(customers.userId, 0)
+          eq(customers.userId, newUser.id)
         )
       });
 

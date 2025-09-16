@@ -10,7 +10,7 @@ export class NotificationsService {
   /**
    * Get notification count - maintains exact same logic as original getNotiCount
    */
-  async getNotificationCount(userId: number) {
+  async getNotificationCount(userId: string) {
     const db = this.db.getDb();
 
     const countResult = await db
@@ -31,7 +31,7 @@ export class NotificationsService {
   /**
    * Get notification details - maintains exact same logic as original getNotiDetails
    */
-  async getNotificationDetails(userId: number, limit?: number) {
+  async getNotificationDetails(userId: string, limit?: number) {
     const db = this.db.getDb();
 
     const notificationsList = await db.query.notifications.findMany({
@@ -49,7 +49,7 @@ export class NotificationsService {
   /**
    * Update notification - maintains exact same logic as original updateNoti
    */
-  async updateNotification(userId: number, notificationId: number) {
+  async updateNotification(userId: string, notificationId: string) {
     const db = this.db.getDb();
 
     await db
@@ -77,7 +77,7 @@ export class NotificationsService {
   /**
    * Update all notifications - maintains exact same logic as original updateAllNoti
    */
-  async updateAllNotifications(userId: number) {
+  async updateAllNotifications(userId: string) {
     const db = this.db.getDb();
 
     await db
@@ -100,7 +100,7 @@ export class NotificationsService {
   /**
    * Delete notification - maintains exact same logic as original deleteNoti
    */
-  async deleteNotification(userId: number, notificationId: number) {
+  async deleteNotification(userId: string, notificationId: string) {
     const db = this.db.getDb();
 
     await db
@@ -127,8 +127,8 @@ export class NotificationsService {
    * Create notification - helper method for creating notifications
    */
   async createNotification(notificationData: {
-    userId: number;
-    orderId?: number;
+    userId: string;
+    orderId?: string;
     title: string;
     message: string;
     type: string;
@@ -153,7 +153,7 @@ export class NotificationsService {
    * Get notifications with pagination
    */
   async getNotificationsWithPagination(
-    userId: number,
+    userId: string,
     page: number = 1,
     limit: number = 10
   ) {

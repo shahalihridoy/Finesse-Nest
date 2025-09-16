@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { and, eq, sql } from "drizzle-orm";
 import { HelperService } from "../../common/services/helper.service";
 import { DatabaseService } from "../../database/database.service";
-import { carts, products, stores } from "../../database/schema";
+import { carts, variants } from "../../database/schema";
 
 @Injectable()
 export class CartService {
@@ -14,7 +14,7 @@ export class CartService {
   /**
    * Show user's cart - maintains exact same logic as original showCarts
    */
-  async showCarts(userId: number, page: number = 1, limit: number = 10) {
+  async showCarts(userId: string, page: number = 1, limit: number = 10) {
     const db = this.db.getDb();
     const offset = (page - 1) * limit;
 
@@ -27,44 +27,15 @@ export class CartService {
             category: true,
             brand: true,
             productImages: true,
-            products: {
+            variants: {
               where: and(
-                eq(products.isAvailable, true),
-                eq(products.isArchived, false)
-              ),
-              with: {
-                purchases: {
-                  where: eq(stores.mainBranch, true),
-                  with: {
-                    store: true
-                  }
-                },
-                sellings: {
-                  where: eq(stores.mainBranch, true),
-                  with: {
-                    store: true
-                  }
-                }
-              }
+                eq(variants.isAvailable, true),
+                eq(variants.isArchived, false)
+              )
             }
           }
         },
-        product: {
-          with: {
-            purchases: {
-              where: eq(stores.mainBranch, true),
-              with: {
-                store: true
-              }
-            },
-            sellings: {
-              where: eq(stores.mainBranch, true),
-              with: {
-                store: true
-              }
-            }
-          }
-        }
+        variant: true
       },
       orderBy: [sql`created_at DESC`],
       limit: limit,
@@ -120,7 +91,7 @@ export class CartService {
   /**
    * Store cart item - maintains exact same logic as original storeCart
    */
-  async storeCart(userId: number, cartData: any) {
+  async storeCart(userId: string, cartData: any) {
     const db = this.db.getDb();
 
     // Check if item already exists in cart
@@ -172,7 +143,7 @@ export class CartService {
   /**
    * Store app cart - maintains exact same logic as original storeAppCart
    */
-  async storeAppCart(userId: number, cartData: any) {
+  async storeAppCart(userId: string, cartData: any) {
     const db = this.db.getDb();
 
     // For app cart, we might handle it differently
@@ -183,7 +154,7 @@ export class CartService {
   /**
    * Update cart item - maintains exact same logic as original updateCart
    */
-  async updateCart(userId: number, cartId: number, updateData: any) {
+  async updateCart(userId: string, cartId: string, updateData: any) {
     const db = this.db.getDb();
 
     // Verify cart item belongs to user
@@ -215,7 +186,7 @@ export class CartService {
   /**
    * Delete cart item - maintains exact same logic as original deleteCart
    */
-  async deleteCart(userId: number, cartId: number) {
+  async deleteCart(userId: string, cartId: string) {
     const db = this.db.getDb();
 
     // Verify cart item belongs to user
@@ -239,7 +210,7 @@ export class CartService {
   /**
    * Clear user's cart - maintains exact same logic as original clearCart
    */
-  async clearCart(userId: number) {
+  async clearCart(userId: string) {
     const db = this.db.getDb();
 
     await db.delete(carts).where(eq(carts.userId, userId));
@@ -253,7 +224,7 @@ export class CartService {
   /**
    * Get cart count - maintains exact same logic as original getCartCount
    */
-  async getCartCount(userId: number) {
+  async getCartCount(userId: string) {
     const db = this.db.getDb();
 
     const countResult = await db
@@ -272,7 +243,7 @@ export class CartService {
   /**
    * Get cart total - maintains exact same logic as original getCartTotal
    */
-  async getCartTotal(userId: number) {
+  async getCartTotal(userId: string) {
     const db = this.db.getDb();
 
     const userCarts = await db.query.carts.findMany({
@@ -280,44 +251,15 @@ export class CartService {
       with: {
         mainProduct: {
           with: {
-            products: {
+            variants: {
               where: and(
-                eq(products.isAvailable, true),
-                eq(products.isArchived, false)
-              ),
-              with: {
-                purchases: {
-                  where: eq(stores.mainBranch, true),
-                  with: {
-                    store: true
-                  }
-                },
-                sellings: {
-                  where: eq(stores.mainBranch, true),
-                  with: {
-                    store: true
-                  }
-                }
-              }
+                eq(variants.isAvailable, true),
+                eq(variants.isArchived, false)
+              )
             }
           }
         },
-        product: {
-          with: {
-            purchases: {
-              where: eq(stores.mainBranch, true),
-              with: {
-                store: true
-              }
-            },
-            sellings: {
-              where: eq(stores.mainBranch, true),
-              with: {
-                store: true
-              }
-            }
-          }
-        }
+        variant: true
       }
     });
 
@@ -332,10 +274,10 @@ export class CartService {
         const formattedProduct =
           await this.helperService.formatMainProductStock(cartItem.mainProduct);
         productPrice = formattedProduct.discountedPrice;
-      } else if (cartItem.productId && cartItem.product) {
+      } else if (cartItem.productId && cartItem.variant) {
         const formattedProduct =
           await this.helperService.formatVariationProductStock(
-            cartItem.product
+            cartItem.variant
           );
         productPrice = formattedProduct.sellingPrice;
       }

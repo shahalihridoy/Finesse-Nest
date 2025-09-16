@@ -4,7 +4,7 @@ import {
   Delete,
   Get,
   Param,
-  ParseIntPipe,
+  ParseUUIDPipe,
   Post,
   Put,
   Query,
@@ -34,7 +34,7 @@ export class PreorderController {
   @Put("cart/:id")
   async updatePreorderCart(
     @Request() req,
-    @Param("id", ParseIntPipe) cartId: number,
+    @Param("id", ParseUUIDPipe) cartId: string,
     @Body() updateData: any
   ) {
     return this.preorderService.updatePreorderCart(
@@ -48,7 +48,7 @@ export class PreorderController {
   @Delete("cart/:id")
   async deletePreorderCart(
     @Request() req,
-    @Param("id", ParseIntPipe) cartId: number
+    @Param("id", ParseUUIDPipe) cartId: string
   ) {
     return this.preorderService.deletePreorderCart(req.user.id, cartId);
   }
@@ -73,7 +73,7 @@ export class PreorderController {
   @Get("orders/:id")
   async showSinglePreorder(
     @Request() req,
-    @Param("id", ParseIntPipe) orderId: number
+    @Param("id", ParseUUIDPipe) orderId: string
   ) {
     return this.preorderService.showSinglePreorder(req.user.id, orderId);
   }
@@ -94,7 +94,7 @@ export class PreorderController {
   @Post("orders/:id/cancel")
   async cancelPreorder(
     @Request() req,
-    @Param("id", ParseIntPipe) orderId: number
+    @Param("id", ParseUUIDPipe) orderId: string
   ) {
     return this.preorderService.cancelPreorder(req.user.id, orderId);
   }
@@ -103,7 +103,7 @@ export class PreorderController {
   @Post("orders/:id/pay")
   async payNowPreorder(
     @Request() req,
-    @Param("id", ParseIntPipe) orderId: number,
+    @Param("id", ParseUUIDPipe) orderId: string,
     @Body() paymentData: any
   ) {
     return this.preorderService.payNowPreorder(
@@ -117,7 +117,7 @@ export class PreorderController {
   @Post("orders/:id/clear-payment")
   async clearPreorderPayment(
     @Request() req,
-    @Param("id", ParseIntPipe) orderId: number
+    @Param("id", ParseUUIDPipe) orderId: string
   ) {
     return this.preorderService.clearPreorderPayment(req.user.id, orderId);
   }
