@@ -13,7 +13,9 @@ import { baseFieldsNoOrg } from "./base";
 // Notifications
 export const notifications = pgTable("notifications", {
   ...baseFieldsNoOrg,
-  userId: uuid("user_id").notNull(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   title: varchar("title", { length: 255 }).notNull(),
   message: text("message").notNull(),
   type: varchar("type", { length: 50 }).default("info"), // 'info', 'success', 'warning', 'error'
@@ -50,7 +52,9 @@ export const contactUs = pgTable("contact_us", {
 // Reports
 export const reports = pgTable("reports", {
   ...baseFieldsNoOrg,
-  userId: uuid("user_id").notNull(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   type: varchar("type", { length: 50 }).notNull(), // 'bug', 'feature', 'other'
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description").notNull(),
@@ -129,11 +133,15 @@ export const menuMiddleBanners = pgTable("menu_middle_banners", {
 // Bonus system
 export const bonuses = pgTable("bonuses", {
   ...baseFieldsNoOrg,
-  customerId: uuid("customer_id").notNull(),
+  customerId: uuid("customer_id")
+    .notNull()
+    .references(() => customers.id, { onDelete: "cascade" }),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   type: varchar("type", { length: 50 }).notNull(), // 'earned', 'redeemed', 'expired'
   description: text("description"),
-  orderId: uuid("order_id") // Reference to order if bonus is from purchase
+  orderId: uuid("order_id").references(() => orders.id, {
+    onDelete: "set null"
+  }) // Reference to order if bonus is from purchase
 });
 
 // Relations
@@ -179,5 +187,6 @@ export const bonusesRelations = relations(bonuses, ({ one }) => ({
 }));
 
 // Import other schemas for relations
+import { orders } from "./orders";
 import { menus } from "./products";
 import { customers, users } from "./users";

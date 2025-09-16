@@ -1,0 +1,114 @@
+# Database Schema Improvements PRD
+
+## Project Overview
+This project aims to improve the database schema and relations for the Finesse-Nest e-commerce application. The current schema has several issues including data redundancy, missing foreign keys, and performance bottlenecks that need to be addressed.
+
+## Current Issues Identified
+1. Data redundancy in variants table (duplicated product data)
+2. Missing foreign key constraints for data integrity
+3. Inefficient inventory tracking system
+4. Missing performance indexes for common queries
+5. JSON storage for variant attributes instead of normalized structure
+6. No audit trail for data changes
+7. Missing user preferences and favorites system
+
+## Phase 1: Critical Fixes (High Priority)
+### 1.1 Add Missing Foreign Key Constraints
+- Add foreign key constraint for orders.user_id → users.id
+- Add foreign key constraint for orders.customer_id → customers.id
+- Add foreign key constraint for order_details.variant_id → variants.id
+- Add foreign key constraint for notifications.user_id → users.id
+- Add foreign key constraint for tokens.user_id → users.id
+- Add foreign key constraint for customers.user_id → users.id
+
+### 1.2 Remove Data Redundancy from Variants Table
+- Remove productName, categoryId, groupId, brandId from variants table
+- Update all queries and services to reference parent product for this data
+- Create migration script to remove redundant columns
+- Update all service methods that access these fields
+
+### 1.3 Implement Proper Inventory Tracking
+- Create inventory_movements table for tracking stock changes
+- Add movement_type field (purchase, sale, adjustment, return)
+- Add reference_id and reference_type for tracking source
+- Create current_stock view for real-time stock calculation
+- Update stock calculation logic in services
+
+## Phase 2: Performance Optimizations (Medium Priority)
+### 2.1 Add Composite Indexes
+- Add index on products(category_id, brand_id, is_available)
+- Add index on orders(user_id, status, created_at)
+- Add index on variants(product_id, is_available)
+- Add index on inventory_movements(variant_id, store_id, created_at)
+- Add partial indexes for active records only
+
+### 2.2 Implement Proper Variant Attributes
+- Create attribute_types table for defining attribute schemas
+- Create variant_attributes table for storing attribute values
+- Migrate JSON variant data to normalized structure
+- Update variant queries to use new attribute system
+- Add validation for required attributes
+
+### 2.3 Add Audit Logging System
+- Create audit_logs table for tracking all data changes
+- Add triggers for automatic audit logging on critical tables
+- Implement audit log service for querying changes
+- Add audit log API endpoints for admin access
+- Create audit log cleanup job for old records
+
+## Phase 3: User Experience Enhancements (Low Priority)
+### 3.1 Add User Preferences System
+- Create user_preferences table for storing user settings
+- Add preference management service
+- Implement user preference API endpoints
+- Add default preferences for new users
+- Create preference migration for existing users
+
+### 3.2 Implement Product Favorites
+- Create product_favorites table separate from wishlist
+- Add favorites management service
+- Implement favorites API endpoints
+- Add favorites count to product listings
+- Create favorites import from existing wishlist data
+
+### 3.3 Advanced Inventory Features
+- Add inventory alerts for low stock
+- Implement inventory forecasting based on sales history
+- Add bulk inventory operations
+- Create inventory reports and analytics
+- Add inventory adjustment workflows
+
+## Technical Requirements
+- All changes must maintain backward compatibility
+- Database migrations must be reversible
+- All new tables must use UUID primary keys
+- All foreign keys must have proper cascade rules
+- All indexes must be optimized for common query patterns
+- All new services must follow existing code patterns
+
+## Success Criteria
+- 100% referential integrity with foreign key constraints
+- 40-60% improvement in query performance
+- Elimination of data redundancy
+- Complete audit trail for all data changes
+- Enhanced user experience with preferences and favorites
+- Scalable inventory management system
+
+## Dependencies
+- Existing database schema and relations
+- Current service layer implementations
+- Existing API endpoints and DTOs
+- Current authentication and authorization system
+
+## Timeline
+- Phase 1: 2-3 weeks
+- Phase 2: 3-4 weeks  
+- Phase 3: 2-3 weeks
+- Total: 7-10 weeks
+
+## Risk Mitigation
+- Create comprehensive backup before each phase
+- Test all migrations on staging environment
+- Implement rollback procedures for each change
+- Monitor performance impact of each change
+- Gradual rollout with feature flags where possible

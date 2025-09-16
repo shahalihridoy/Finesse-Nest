@@ -1,0 +1,241 @@
+{
+  "master": {
+    "0": {
+      "id": 1,
+      "title": "Add Missing Foreign Key Constraints",
+      "description": "Add foreign key constraints for data integrity across all tables",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [],
+      "details": "Add foreign key constraints for orders.user_id → users.id, orders.customer_id → customers.id, order_details.variant_id → variants.id, notifications.user_id → users.id, tokens.user_id → users.id, and customers.user_id → users.id. All constraints should have proper cascade rules for data integrity.",
+      "testStrategy": "Test all foreign key constraints by attempting to insert invalid data and verify proper error handling. Test cascade operations for delete and update scenarios.",
+      "subtasks": []
+    },
+    "1": {
+      "id": 2,
+      "title": "Remove Data Redundancy from Variants Table",
+      "description": "Remove duplicated product data from variants table to normalize the schema",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        1
+      ],
+      "details": "Remove productName, categoryId, groupId, brandId from variants table since this data is already available through the parent product. Update all queries and services to reference parent product for this data. Create migration script to remove redundant columns safely.",
+      "testStrategy": "Verify all queries still work correctly after removing redundant fields. Test that product information is properly retrieved through parent product relations.",
+      "subtasks": []
+    },
+    "2": {
+      "id": 3,
+      "title": "Implement Proper Inventory Tracking",
+      "description": "Create comprehensive inventory tracking system with movement history",
+      "status": "pending",
+      "priority": "high",
+      "dependencies": [
+        2
+      ],
+      "details": "Create inventory_movements table for tracking stock changes with movement_type (purchase, sale, adjustment, return), reference_id and reference_type for tracking source. Create current_stock view for real-time stock calculation. Update stock calculation logic in services.",
+      "testStrategy": "Test inventory movements for all types (purchase, sale, adjustment, return). Verify current_stock view returns accurate stock levels. Test stock calculations in all relevant services.",
+      "subtasks": []
+    },
+    "3": {
+      "id": 4,
+      "title": "Add Composite Indexes for Performance",
+      "description": "Add optimized indexes for common query patterns",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        3
+      ],
+      "details": "Add index on products(category_id, brand_id, is_available), orders(user_id, status, created_at), variants(product_id, is_available), inventory_movements(variant_id, store_id, created_at). Add partial indexes for active records only.",
+      "testStrategy": "Measure query performance before and after adding indexes. Verify indexes are being used in query execution plans. Test performance with large datasets.",
+      "subtasks": []
+    },
+    "4": {
+      "id": 5,
+      "title": "Implement Proper Variant Attributes",
+      "description": "Replace JSON variant attributes with normalized database structure",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        4
+      ],
+      "details": "Create attribute_types table for defining attribute schemas, variant_attributes table for storing attribute values. Migrate JSON variant data to normalized structure. Update variant queries to use new attribute system. Add validation for required attributes.",
+      "testStrategy": "Test migration of existing JSON data to new structure. Verify all variant attribute queries work with new normalized structure. Test attribute validation rules.",
+      "subtasks": []
+    },
+    "5": {
+      "id": 6,
+      "title": "Add Audit Logging System",
+      "description": "Implement comprehensive audit trail for all data changes",
+      "status": "pending",
+      "priority": "medium",
+      "dependencies": [
+        5
+      ],
+      "details": "Create audit_logs table for tracking all data changes. Add triggers for automatic audit logging on critical tables. Implement audit log service for querying changes. Add audit log API endpoints for admin access. Create audit log cleanup job for old records.",
+      "testStrategy": "Test audit logging for all CRUD operations on critical tables. Verify audit log queries return accurate change history. Test audit log cleanup functionality.",
+      "subtasks": []
+    },
+    "6": {
+      "id": 7,
+      "title": "Add User Preferences System",
+      "description": "Implement user preferences for personalized experience",
+      "status": "pending",
+      "priority": "low",
+      "dependencies": [
+        6
+      ],
+      "details": "Create user_preferences table for storing user settings. Add preference management service. Implement user preference API endpoints. Add default preferences for new users. Create preference migration for existing users.",
+      "testStrategy": "Test user preference CRUD operations. Verify default preferences are set for new users. Test preference migration for existing users.",
+      "subtasks": []
+    },
+    "7": {
+      "id": 8,
+      "title": "Implement Product Favorites",
+      "description": "Create product favorites system separate from wishlist",
+      "status": "pending",
+      "priority": "low",
+      "dependencies": [
+        7
+      ],
+      "details": "Create product_favorites table separate from wishlist. Add favorites management service. Implement favorites API endpoints. Add favorites count to product listings. Create favorites import from existing wishlist data.",
+      "testStrategy": "Test favorites CRUD operations. Verify favorites count displays correctly in product listings. Test favorites import from wishlist data.",
+      "subtasks": []
+    },
+    "8": {
+      "id": 9,
+      "title": "Advanced Inventory Features",
+      "description": "Implement advanced inventory management features",
+      "status": "pending",
+      "priority": "low",
+      "dependencies": [
+        8
+      ],
+      "details": "Add inventory alerts for low stock. Implement inventory forecasting based on sales history. Add bulk inventory operations. Create inventory reports and analytics. Add inventory adjustment workflows.",
+      "testStrategy": "Test low stock alerts functionality. Verify inventory forecasting accuracy. Test bulk inventory operations. Validate inventory reports and analytics.",
+      "subtasks": []
+    },
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Add Missing Foreign Key Constraints",
+        "description": "Add foreign key constraints for data integrity across all tables",
+        "details": "Add foreign key constraints for orders.user_id → users.id, orders.customer_id → customers.id, order_details.variant_id → variants.id, notifications.user_id → users.id, tokens.user_id → users.id, and customers.user_id → users.id. All constraints should have proper cascade rules for data integrity.",
+        "testStrategy": "",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 2,
+        "title": "Remove Data Redundancy from Variants Table",
+        "description": "Remove duplicated product data from variants table to normalize the schema",
+        "details": "Remove productName, categoryId, groupId, brandId from variants table since this data is already available through the parent product. Update all queries and services to reference parent product for this data. Create migration script to remove redundant columns safely.",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          1
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 3,
+        "title": "Implement Proper Inventory Tracking",
+        "description": "Create comprehensive inventory tracking system with movement history",
+        "details": "Create inventory_movements table for tracking stock changes with movement_type (purchase, sale, adjustment, return), reference_id and reference_type for tracking source. Create current_stock view for real-time stock calculation. Update stock calculation logic in services.",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          2
+        ],
+        "priority": "high",
+        "subtasks": []
+      },
+      {
+        "id": 4,
+        "title": "Add Composite Indexes for Performance",
+        "description": "Add optimized indexes for common query patterns",
+        "details": "Add index on products(category_id, brand_id, is_available), orders(user_id, status, created_at), variants(product_id, is_available), inventory_movements(variant_id, store_id, created_at). Add partial indexes for active records only.",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          3
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Implement Proper Variant Attributes",
+        "description": "Replace JSON variant attributes with normalized database structure",
+        "details": "Create attribute_types table for defining attribute schemas, variant_attributes table for storing attribute values. Migrate JSON variant data to normalized structure. Update variant queries to use new attribute system. Add validation for required attributes.",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          4
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Add Audit Logging System",
+        "description": "Implement comprehensive audit trail for all data changes",
+        "details": "Create audit_logs table for tracking all data changes. Add triggers for automatic audit logging on critical tables. Implement audit log service for querying changes. Add audit log API endpoints for admin access. Create audit log cleanup job for old records.",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          5
+        ],
+        "priority": "medium",
+        "subtasks": []
+      },
+      {
+        "id": 7,
+        "title": "Add User Preferences System",
+        "description": "Implement user preferences for personalized experience",
+        "details": "Create user_preferences table for storing user settings. Add preference management service. Implement user preference API endpoints. Add default preferences for new users. Create preference migration for existing users.",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          6
+        ],
+        "priority": "low",
+        "subtasks": []
+      },
+      {
+        "id": 8,
+        "title": "Implement Product Favorites",
+        "description": "Create product favorites system separate from wishlist",
+        "details": "Create product_favorites table separate from wishlist. Add favorites management service. Implement favorites API endpoints. Add favorites count to product listings. Create favorites import from existing wishlist data.",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          7
+        ],
+        "priority": "low",
+        "subtasks": []
+      },
+      {
+        "id": 9,
+        "title": "Advanced Inventory Features",
+        "description": "Implement advanced inventory management features",
+        "details": "Add inventory alerts for low stock. Implement inventory forecasting based on sales history. Add bulk inventory operations. Create inventory reports and analytics. Add inventory adjustment workflows.",
+        "testStrategy": "",
+        "status": "pending",
+        "dependencies": [
+          8
+        ],
+        "priority": "low",
+        "subtasks": []
+      }
+    ],
+    "metadata": {
+      "created": "2025-09-16T12:04:39.003Z",
+      "updated": "2025-09-16T12:11:31.717Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

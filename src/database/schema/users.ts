@@ -28,8 +28,12 @@ export const customers = pgTable("customers", {
   customerName: varchar("customer_name", { length: 255 }),
   contact: varchar("contact", { length: 20 }),
   email: varchar("email", { length: 254 }),
-  cityId: uuid("city_id"),
-  areaId: uuid("area_id"),
+  cityId: uuid("city_id").references(() => userCities.id, {
+    onDelete: "set null"
+  }),
+  areaId: uuid("area_id").references(() => userAreas.id, {
+    onDelete: "set null"
+  }),
   address: text("address")
 });
 
@@ -78,5 +82,5 @@ export const tokensRelations = relations(tokens, ({ one }) => ({
 
 // Import other schemas for relations
 import { notifications } from "./notifications";
-import { orders } from "./orders";
+import { orders, userAreas, userCities } from "./orders";
 import { reviews, wishlists } from "./products";

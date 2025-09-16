@@ -18,7 +18,9 @@ export const orders = pgTable(
   "orders",
   {
     ...baseFieldsNoOrg,
-    userId: uuid("user_id").notNull(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
     orderNo: varchar("order_no", { length: 255 }).notNull().unique(),
     status: varchar("status", { length: 50 }).default("Pending"),
     paymentStatus: varchar("payment_status", { length: 50 }).default("Pending"),
@@ -69,7 +71,9 @@ export const orderDetails = pgTable("order_details", {
 // Cart
 export const carts = pgTable("carts", {
   ...baseFieldsNoOrg,
-  userId: uuid("user_id").notNull(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   mproductId: uuid("mproduct_id"),
   productId: uuid("product_id"),
   quantity: integer("quantity").notNull(),
@@ -79,7 +83,9 @@ export const carts = pgTable("carts", {
 // Pre-orders
 export const preorders = pgTable("preorders", {
   ...baseFieldsNoOrg,
-  userId: uuid("user_id").notNull(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   orderNo: varchar("order_no", { length: 255 }).notNull().unique(),
   status: varchar("status", { length: 50 }).default("Pending"),
   paymentStatus: varchar("payment_status", { length: 50 }).default("Pending"),
@@ -110,7 +116,9 @@ export const preorderDetails = pgTable("preorder_details", {
 // Pre-order Cart
 export const preorderCarts = pgTable("preorder_carts", {
   ...baseFieldsNoOrg,
-  userId: uuid("user_id").notNull(),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
   mproductId: uuid("mproduct_id"),
   productId: uuid("product_id"),
   quantity: integer("quantity").notNull(),
@@ -164,7 +172,7 @@ export const giftVouchers = pgTable("gift_vouchers", {
   code: varchar("code", { length: 50 }).notNull().unique(),
   amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
   isUsed: boolean("is_used").default(false),
-  usedBy: uuid("used_by"), // User ID who used the voucher
+  usedBy: uuid("used_by").references(() => users.id, { onDelete: "set null" }), // User ID who used the voucher
   usedAt: timestamp("used_at"),
   validFrom: timestamp("valid_from"),
   validUntil: timestamp("valid_until")
